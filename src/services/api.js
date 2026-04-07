@@ -1,3 +1,4 @@
+// Production frontend on Vercel must always talk to the Hostinger backend.
 const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public";
 
 function normalizeBaseUrl(value) {
