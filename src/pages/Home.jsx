@@ -6,11 +6,9 @@ import ValueProps from "../components/ValueProps.jsx";
 import Showcase from "../components/Showcase.jsx";
 import Partners from "../components/Partners.jsx";
 import Footer from "../components/Footer.jsx";
-import { apiGet, apiGetAuth, apiPostAuth } from "../services/api.js";
+import { apiGet, apiGetAuth, apiPostAuth, buildApiUrl } from "../services/api.js";
 
-const streamUrl = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/stream`
-  : "https://orange-bison-917444.hostingersite.com/Backend/public/api/stream";
+const streamUrl = buildApiUrl("/api/stream");
 
 export default function Home() {
   const [auctions, setAuctions] = useState([]);

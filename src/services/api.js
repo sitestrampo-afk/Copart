@@ -1,8 +1,21 @@
-﻿const baseUrl =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD
-    ? "https://orange-bison-917444.hostingersite.com/Backend/public"
-    : "http://localhost/Favareto/Backend/public/index.php");
+const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public";
+
+function normalizeBaseUrl(value) {
+  const trimmed = String(value || "").trim().replace(/\/+$/, "");
+  if (!trimmed) return DEFAULT_PROD_API_URL;
+  if (/copartatendimento\.com/i.test(trimmed)) return DEFAULT_PROD_API_URL;
+  if (/localhost\/Favareto\/Backend\/public/i.test(trimmed)) return DEFAULT_PROD_API_URL;
+  return trimmed;
+}
+
+export const apiBaseUrl = normalizeBaseUrl(
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Favareto/Backend/public/index.php")
+);
+
+export function buildApiUrl(path) {
+  return `${apiBaseUrl}${path}`;
+}
+
 const debugEnabled = String(import.meta.env.VITE_DEBUG || "true") === "true";
 
 function debugLog(...args) {
@@ -64,21 +77,20 @@ async function parseResponse(response) {
 }
 
 export async function apiGet(path) {
-  debugLog("GET", `${baseUrl}${path}`);
-  const response = await fetch(`${baseUrl}${path}`);
+  debugLog("GET", `${apiBaseUrl}${path}`);
+  const response = await fetch(`${apiBaseUrl}${path}`);
   return parseResponse(response);
 }
 
 export async function apiGetAuth(path, token) {
   const safeToken = normalizeToken(token);
   if (!safeToken) {
-    debugLog("GET", `${baseUrl}${path}`, "TOKEN AUSENTE");
+    debugLog("GET", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("GET", `${baseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
-  const response = await fetch(`${baseUrl}${path}`, {
+  debugLog("GET", `${apiBaseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     headers: {
-      // Some hosts/proxies drop Authorization; send a secondary header too.
       Authorization: `Bearer ${safeToken}`,
       "X-Auth-Token": safeToken
     }
@@ -87,9 +99,9 @@ export async function apiGetAuth(path, token) {
 }
 
 export async function apiPost(path, body) {
-  debugLog("POST", `${baseUrl}${path}`, body);
+  debugLog("POST", `${apiBaseUrl}${path}`, body);
   const payload = toFormBody(body);
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
@@ -102,12 +114,12 @@ export async function apiPost(path, body) {
 export async function apiPostAuth(path, body, token) {
   const safeToken = normalizeToken(token);
   if (!safeToken) {
-    debugLog("POST", `${baseUrl}${path}`, "TOKEN AUSENTE");
+    debugLog("POST", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("POST", `${baseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
+  debugLog("POST", `${apiBaseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
   const payload = toFormBody(body);
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
@@ -122,12 +134,12 @@ export async function apiPostAuth(path, body, token) {
 export async function apiPutAuth(path, body, token) {
   const safeToken = normalizeToken(token);
   if (!safeToken) {
-    debugLog("PUT", `${baseUrl}${path}`, "TOKEN AUSENTE");
+    debugLog("PUT", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("PUT", `${baseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
+  debugLog("PUT", `${apiBaseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
   const payload = toFormBody(body);
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
@@ -142,11 +154,11 @@ export async function apiPutAuth(path, body, token) {
 export async function apiDeleteAuth(path, token) {
   const safeToken = normalizeToken(token);
   if (!safeToken) {
-    debugLog("DELETE", `${baseUrl}${path}`, "TOKEN AUSENTE");
+    debugLog("DELETE", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("DELETE", `${baseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
-  const response = await fetch(`${baseUrl}${path}`, {
+  debugLog("DELETE", `${apiBaseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${safeToken}`,
@@ -161,10 +173,8 @@ export async function apiUpload(file, token) {
   debugLog("UPLOAD admin", file?.name, safeToken ? safeToken.slice(0, 8) + "..." : "TOKEN AUSENTE");
   const body = new FormData();
   body.append("file", file);
-  // Alguns ambientes Apache/XAMPP podem nao repassar Authorization em multipart.
-  // O backend aceita token via campo do formulario tambem (token).
   if (safeToken) body.append("token", safeToken);
-  const response = await fetch(`${baseUrl}/api/uploads`, {
+  const response = await fetch(`${apiBaseUrl}/api/uploads`, {
     method: "POST",
     headers: safeToken
       ? { Authorization: `Bearer ${safeToken}`, "X-Auth-Token": safeToken }
@@ -188,7 +198,7 @@ export async function apiUploadUser(file, token) {
   const body = new FormData();
   body.append("file", file);
   if (safeToken) body.append("token", safeToken);
-  const response = await fetch(`${baseUrl}/api/user/uploads`, {
+  const response = await fetch(`${apiBaseUrl}/api/user/uploads`, {
     method: "POST",
     headers: safeToken
       ? { Authorization: `Bearer ${safeToken}`, "X-Auth-Token": safeToken }
@@ -205,6 +215,3 @@ export async function apiUploadUser(file, token) {
   }
   return data;
 }
-
-
-
