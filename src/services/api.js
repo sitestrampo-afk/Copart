@@ -1,7 +1,7 @@
 ﻿const baseUrl =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
-    ? "https://copartatendimento.com/Backend/public"
+    ? "https://orange-bison-917444.hostingersite.com/Backend/public"
     : "http://localhost/Favareto/Backend/public/index.php");
 const debugEnabled = String(import.meta.env.VITE_DEBUG || "true") === "true";
 

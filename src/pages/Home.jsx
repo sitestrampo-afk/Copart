@@ -10,7 +10,7 @@ import { apiGet, apiGetAuth, apiPostAuth } from "../services/api.js";
 
 const streamUrl = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api/stream`
-  : "http://localhost/Favareto/Backend/public/api/stream";
+  : "https://orange-bison-917444.hostingersite.com/Backend/public/api/stream";
 
 export default function Home() {
   const [auctions, setAuctions] = useState([]);

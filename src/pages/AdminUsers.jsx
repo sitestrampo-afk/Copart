@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiGetAuth, apiPostAuth } from "../services/api.js";
 
 const apiBaseUrl =
-  import.meta.env.VITE_API_URL || "http://localhost/Favareto/Backend/public";
+  import.meta.env.VITE_API_URL || "https://orange-bison-917444.hostingersite.com/Backend/public";
 const uploadBaseUrl = apiBaseUrl.replace(/\/index\.php$/, "");
 
 function formatDocumentStatus(status) {
