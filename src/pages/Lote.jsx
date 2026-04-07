@@ -3,23 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import { apiGet, apiGetAuth, apiPost, apiPostAuth } from "../services/api.js";
-
-function parseDateTime(value) {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    // MySQL DATETIME usually comes as "YYYY-MM-DD HH:mm:ss"
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(trimmed)) {
-      const d = new Date(trimmed.replace(" ", "T"));
-      return Number.isNaN(d.getTime()) ? null : d;
-    }
-    const d = new Date(trimmed);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
+import { formatDateTimeBR, parseDateTimeValue } from "../utils/datetime.js";
 
 function formatMoney(value) {
   const num = Number(value);
@@ -50,12 +34,6 @@ function parseImages(auction) {
     }
   }
   return Array.from(new Set(list));
-}
-
-function formatDateTime(value) {
-  const parsed = parseDateTime(value);
-  if (!parsed) return "-";
-  return parsed.toLocaleString("pt-BR");
 }
 
 function formatCountdown(ms) {
@@ -148,8 +126,8 @@ export default function Lote() {
     [currentBid, increment]
   );
 
-  const startsAt = parseDateTime(auction?.starts_at);
-  const endsAt = parseDateTime(auction?.ends_at);
+  const startsAt = parseDateTimeValue(auction?.starts_at);
+  const endsAt = parseDateTimeValue(auction?.ends_at);
   const now = tick;
   const isStarted = !startsAt || startsAt.getTime() <= now;
   const isOpen = (!endsAt || endsAt.getTime() > now) && isStarted && Number(auction?.is_published ?? 1) === 1;
@@ -270,7 +248,9 @@ export default function Lote() {
               <div className="lot-grid">
                 <div className="lot-left">
                   <div className="lot-gallery">
-                    <div className="lot-image" style={{ backgroundImage: mainImage ? `url(${mainImage})` : "none" }} />
+                    <div className="lot-image-wrap">
+                      {mainImage ? <img className="lot-image" src={mainImage} alt={auction.title || "Imagem do lote"} /> : <div className="lot-image empty" />}
+                    </div>
                     {images.length > 1 && (
                       <div className="lot-thumbs" aria-label="Miniaturas">
                         {images.slice(0, 18).map((img) => (
@@ -295,11 +275,11 @@ export default function Lote() {
                     <div className="lot-info-body">
                       <div>
                         <span>Inicio</span>
-                        <strong>{formatDateTime(auction.starts_at)}</strong>
+                        <strong>{formatDateTimeBR(auction.starts_at)}</strong>
                       </div>
                       <div>
                         <span>Termino</span>
-                        <strong>{formatDateTime(auction.ends_at)}</strong>
+                        <strong>{formatDateTimeBR(auction.ends_at)}</strong>
                       </div>
                       <div>
                         <span>Lance inicial</span>
@@ -394,7 +374,7 @@ export default function Lote() {
                     )}
                     <div className="lot-time-meta">
                       <span>{isOpen ? "Encerramento" : "Encerrado em"}</span>
-                      <strong>{formatDateTime(auction.ends_at)}</strong>
+                      <strong>{formatDateTimeBR(auction.ends_at)}</strong>
                     </div>
                   </div>
 
@@ -484,7 +464,7 @@ export default function Lote() {
                       <div key={bid.id}>
                         <span>{bid.user_name}</span>
                         <span>{formatMoney(bid.amount)}</span>
-                        <span>{formatDateTime(bid.created_at)}</span>
+                        <span>{formatDateTimeBR(bid.created_at)}</span>
                       </div>
                     ))}
                   </div>

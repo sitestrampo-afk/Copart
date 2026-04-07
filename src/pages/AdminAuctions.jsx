@@ -8,6 +8,7 @@ import {
   apiPutAuth,
   apiUpload
 } from "../services/api.js";
+import { formatDateTimeBR } from "../utils/datetime.js";
 
 const emptyForm = {
   listing_type: "lote",
@@ -54,8 +55,7 @@ function formatStatus(item) {
 }
 
 function formatDate(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString("pt-BR");
+  return formatDateTimeBR(value);
 }
 
 function toDateTimeLocal(value) {
@@ -128,7 +128,8 @@ export default function AdminAuctions() {
     if (!files || files.length === 0) return [];
     const token = localStorage.getItem("adminToken");
     const urls = [];
-    for (const file of files) {
+    const orderedFiles = [...files].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "pt-BR"));
+    for (const file of orderedFiles) {
       const data = await apiUpload(file, token);
       urls.push(data.url);
     }
@@ -156,7 +157,7 @@ export default function AdminAuctions() {
 
       const images = [...existingImages, ...uploadedImages];
       const attachments = [...existingAttachments, ...uploadedAttachments];
-      const imageUrl = images[0] || form.image_url || "";
+      const imageUrl = form.image_url.trim() || images[0] || "";
       const lotNumber = listingType === "lote" ? form.lot_number.trim() : "";
       const startingPrice = listingType === "lote" ? Number(form.starting_price || 0) : 0;
       const minimumIncrement = listingType === "lote" ? Number(form.minimum_bid_increment || 10) : 0;
@@ -207,22 +208,22 @@ export default function AdminAuctions() {
     setEditingId(item.id);
     setExistingImages(Array.isArray(item.images) ? item.images : []);
     setExistingAttachments(Array.isArray(item.attachments) ? item.attachments : []);
-      const listingType = normalizeListingType(item.listing_type);
-      setShowEditor(true);
-      setForm({
-        listing_type: listingType,
-        title: item.title || "",
-        lot_number: item.lot_number || "",
-        starting_price: item.starting_price || "",
-        minimum_bid_increment: item.minimum_bid_increment || "10",
-        category_id: item.category_id || "",
-        starts_at: toDateTimeLocal(item.starts_at),
-        ends_at: toDateTimeLocal(item.ends_at),
-        location: item.location || "",
-        legal_status: item.legal_status || "Extrajudicial",
-        auction_mode: item.auction_mode || "Online",
-        parent_auction_id: item.parent_auction_id || "",
-        image_url: item.image_url || "",
+    const listingType = normalizeListingType(item.listing_type);
+    setShowEditor(true);
+    setForm({
+      listing_type: listingType,
+      title: item.title || "",
+      lot_number: item.lot_number || "",
+      starting_price: item.starting_price || "",
+      minimum_bid_increment: item.minimum_bid_increment || "10",
+      category_id: item.category_id || "",
+      starts_at: toDateTimeLocal(item.starts_at),
+      ends_at: toDateTimeLocal(item.ends_at),
+      location: item.location || "",
+      legal_status: item.legal_status || "Extrajudicial",
+      auction_mode: item.auction_mode || "Online",
+      parent_auction_id: item.parent_auction_id || "",
+      image_url: item.image_url || "",
       description: item.description || "",
       inspection_notes: item.inspection_notes || "",
       payment_notes: item.payment_notes || "",

@@ -2605,13 +2605,24 @@ h3,
     padding: 16px;
 }
 
+.lot-image-wrap {
+    width: 100%;
+    border-radius: 14px;
+    background-color: #eef3fa;
+    overflow: hidden;
+}
+
 .lot-image {
     width: 100%;
     height: 420px;
-    border-radius: 14px;
-    background-size: cover;
-    background-position: center;
-    background-color: #eef3fa;
+    display: block;
+    object-fit: contain;
+    object-position: center;
+    background: #eef3fa;
+}
+
+.lot-image.empty {
+    min-height: 420px;
 }
 
 .lot-thumbs {
@@ -2758,6 +2769,63 @@ h3,
     display: block;
     color: #5b6c78;
     margin-top: 6px;
+}
+
+.lot-info-box {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(10, 25, 48, 0.08);
+    padding: 18px;
+    border: 1px solid #dce7f3;
+}
+
+.lot-info-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.lot-info-head h3 {
+    margin: 0;
+    font-family: "Playfair Display", serif;
+}
+
+.lot-info-lot {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: #12385d;
+    font-weight: 800;
+}
+
+.lot-info-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.lot-info-body > div {
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #f9fcff, #f2f7fc);
+    border: 1px solid #e1ebf5;
+}
+
+.lot-info-body span {
+    display: block;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6a8096;
+    margin-bottom: 6px;
+}
+
+.lot-info-body strong {
+    display: block;
+    color: #12385d;
+    line-height: 1.35;
 }
 
 .lot-countdown {
@@ -3002,6 +3070,9 @@ h3,
     .lot-note-grid {
         grid-template-columns: 1fr 1fr;
     }
+    .lot-image {
+        height: 340px;
+    }
 }
 
 @media (max-width: 520px) {
@@ -3010,6 +3081,9 @@ h3,
     }
     .lot-image {
         height: 260px;
+    }
+    .lot-image.empty {
+        min-height: 260px;
     }
     .lot-quick {
         grid-template-columns: 1fr;
@@ -3022,6 +3096,9 @@ h3,
     .lot-info-grid,
     .lot-note-grid,
     .lot-history-table > div {
+        grid-template-columns: 1fr;
+    }
+    .lot-info-body {
         grid-template-columns: 1fr;
     }
     .lot-extra-panel,
