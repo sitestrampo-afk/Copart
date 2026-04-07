@@ -1,0 +1,147 @@
+﻿import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar.jsx";
+import Hero from "../components/Hero.jsx";
+import AuctionGrid from "../components/AuctionGrid.jsx";
+import ValueProps from "../components/ValueProps.jsx";
+import Showcase from "../components/Showcase.jsx";
+import Partners from "../components/Partners.jsx";
+import Footer from "../components/Footer.jsx";
+import { apiGet, apiGetAuth, apiPostAuth } from "../services/api.js";
+
+const streamUrl = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/stream`
+  : "http://localhost/Favareto/Backend/public/api/stream";
+
+export default function Home() {
+  const [auctions, setAuctions] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [bidAmount, setBidAmount] = useState("");
+  const [bidError, setBidError] = useState("");
+  const [bidMessage, setBidMessage] = useState("");
+  const [documentState, setDocumentState] = useState({ primary: null, residence: null });
+
+  const canBid = documentState.primary?.status === "aprovado" && documentState.residence?.status === "aprovado";
+  const missingDocs = [];
+  if (documentState.primary?.status !== "aprovado") missingDocs.push("documento principal");
+  if (documentState.residence?.status !== "aprovado") missingDocs.push("comprovante de residencia");
+  const bidButtonLabel = canBid ? "Enviar lance" : "Documentos pendentes";
+
+  useEffect(() => {
+    apiGet("/api/auctions")
+      .then((data) => setAuctions(data.data || []))
+      .catch(() => {});
+
+    const source = new EventSource(streamUrl);
+    source.addEventListener("update", (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.auctions) {
+          setAuctions(payload.auctions);
+        }
+      } catch {
+        // ignore
+      }
+    });
+    return () => source.close();
+  }, []);
+
+  async function handleBidSubmit(event) {
+    event.preventDefault();
+    setBidError("");
+    setBidMessage("");
+    const token = (() => {
+      const value = localStorage.getItem("userToken");
+      if (!value || value === "null" || value === "undefined") return "";
+      return value;
+    })();
+    if (!token) {
+      setBidError("Faça login para dar lances.");
+      return;
+    }
+    if (!canBid) {
+      setBidError(
+        missingDocs.length ? `Aguardando aprovacao do(s): ${missingDocs.join(" e ")}.` : "Envie seus documentos e aguarde aprovacao para dar lances."
+      );
+      return;
+    }
+    try {
+      await apiPostAuth("/api/bids", { auction_id: selected.id, amount: Number(bidAmount) }, token);
+      setBidMessage("Lance registrado!");
+      setBidAmount("");
+    } catch (err) {
+      const msg = err.message || "Erro ao enviar lance.";
+      if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
+        localStorage.removeItem("userToken");
+        setBidError("Sua sessão expirou. Faça login novamente.");
+        return;
+      }
+      setBidError(msg);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    async function loadDocStatus() {
+      const token = localStorage.getItem("userToken");
+      if (!selected || !token) {
+        setDocumentState({ primary: null, residence: null });
+        return;
+      }
+      try {
+        const doc = await apiGetAuth("/api/user/documents", token);
+        if (!active) return;
+        setDocumentState({
+          primary: doc.data?.primary || null,
+          residence: doc.data?.residence || null
+        });
+      } catch {
+        if (active) setDocumentState({ primary: null, residence: null });
+      }
+    }
+    loadDocStatus();
+    return () => {
+      active = false;
+    };
+  }, [selected]);
+
+  return (
+    <div>
+      <Navbar />
+      <Hero />
+      <AuctionGrid auctions={auctions.length ? auctions : undefined} onBid={setSelected} />
+      <ValueProps />
+      <Showcase />
+      <Partners />
+      <Footer />
+
+      {selected && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h3>Dar lance</h3>
+            <p>{selected.title}</p>
+            <form className="admin-form" onSubmit={handleBidSubmit}>
+              <input
+                type="number"
+                placeholder="Valor do lance"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                required
+              />
+              <button className="cta" type="submit" disabled={!canBid}>
+                {bidButtonLabel}
+              </button>
+              <button className="ghost" type="button" onClick={() => setSelected(null)}>Cancelar</button>
+            </form>
+            {!canBid && (
+              <div className="alert warning">
+                {missingDocs.length ? `Aguardando aprovacao do(s): ${missingDocs.join(" e ")}.` : "Envie seus documentos e aguarde aprovacao para dar lances."}
+              </div>
+            )}
+            {bidError && <div className="alert error">{bidError}</div>}
+            {bidMessage && <div className="alert success">{bidMessage}</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

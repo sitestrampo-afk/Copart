@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leilão Copart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
+  <script type="module" crossorigin src="/assets/index--USuMkvI.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DSzeRhwI.css">
+</head>
+
+<body>
+    <div id="root"></div>
+    <!-- GitHub Pages SPA fallback:
+         404.html redireciona para /?/<rota>; aqui restauramos a rota original. -->
+    <script type="text/javascript">
+        (function (l) {
+            if (l.search && l.search.startsWith("?/")) {
+                var route = l.search.slice(2);
+                var parts = route.split("&");
+                var path = parts.shift() || "";
+                var query = parts.length ? "?" + parts.join("&") : "";
+                window.history.replaceState(null, null, "/" + path + query + l.hash);
+            }
+        })(window.location);
+    </script>
+</body>
+
+</html>
