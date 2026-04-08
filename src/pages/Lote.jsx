@@ -50,6 +50,23 @@ function formatCountdown(ms) {
   };
 }
 
+function parseCurrencyBR(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const normalized = String(value)
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  if (!normalized) return null;
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function formatCurrencyBR(value) {
+  const num = typeof value === "number" ? value : parseCurrencyBR(value);
+  if (num === null || Number.isNaN(num)) return "";
+  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export default function Lote() {
   const { id } = useParams();
   const auctionId = Number(id);
@@ -172,7 +189,7 @@ export default function Lote() {
       setError("Comprovante de residencia pendente. Envie ou reenvie no perfil.");
       return;
     }
-    const numeric = Number(String(amount).replace(/\./g, "").replace(",", "."));
+    const numeric = parseCurrencyBR(amount);
     if (!numeric || Number.isNaN(numeric)) {
       setError("Informe um valor valido.");
       return;
@@ -309,7 +326,7 @@ export default function Lote() {
 
                     <div className="lot-quick">
                       {quickSteps.map((value) => (
-                        <button key={value} className="quick" type="button" onClick={() => setAmount(String(value))}>
+                        <button key={value} className="quick" type="button" onClick={() => setAmount(formatCurrencyBR(value))}>
                           <span className="plus">+</span>
                           <span>{formatMoney(value)}</span>
                         </button>
@@ -320,8 +337,13 @@ export default function Lote() {
                       <label>Valor do lance</label>
                       <input
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          const numericValue = parseCurrencyBR(next);
+                          setAmount(next.trim() === "" || numericValue === null ? "" : formatCurrencyBR(numericValue));
+                        }}
                         inputMode="decimal"
+                        type="text"
                         placeholder={`Minimo ${formatMoney(currentBid + increment)}`}
                       />
                       <button className="cta" type="button" disabled={!canBid || submitting} onClick={submitBid}>

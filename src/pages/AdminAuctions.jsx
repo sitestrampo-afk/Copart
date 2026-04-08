@@ -68,6 +68,16 @@ function fileNameFromUrl(url) {
   return String(url).split("/").pop() || url;
 }
 
+function moveArrayItem(items, fromIndex, toIndex) {
+  if (!Array.isArray(items)) return [];
+  if (fromIndex < 0 || fromIndex >= items.length) return items;
+  if (toIndex < 0 || toIndex >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
 function getListingRouteType(pathname) {
   if (pathname.includes("/admin/leiloes")) return "leilao";
   if (pathname.includes("/admin/lotes")) return "lote";
@@ -128,8 +138,7 @@ export default function AdminAuctions() {
     if (!files || files.length === 0) return [];
     const token = localStorage.getItem("adminToken");
     const urls = [];
-    const orderedFiles = [...files].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "pt-BR"));
-    for (const file of orderedFiles) {
+    for (const file of files) {
       const data = await apiUpload(file, token);
       urls.push(data.url);
     }
@@ -280,6 +289,27 @@ export default function AdminAuctions() {
 
   function removeExistingImage(url) {
     setExistingImages((prev) => prev.filter((item) => item !== url));
+  }
+
+  function moveExistingImage(url, direction) {
+    setExistingImages((prev) => {
+      const index = prev.indexOf(url);
+      return moveArrayItem(prev, index, index + direction);
+    });
+  }
+
+  function moveSelectedFile(index, direction) {
+    setForm((prev) => ({
+      ...prev,
+      files: moveArrayItem(prev.files || [], index, index + direction)
+    }));
+  }
+
+  function removeSelectedFile(index) {
+    setForm((prev) => ({
+      ...prev,
+      files: (prev.files || []).filter((_, itemIndex) => itemIndex !== index)
+    }));
   }
 
   function removeExistingAttachment(url) {
@@ -596,15 +626,55 @@ export default function AdminAuctions() {
               <div className="admin-upload-list">
                 {existingImages.map((url) => (
                   <div className="admin-upload-chip" key={url}>
-                    <span>{fileNameFromUrl(url)}</span>
-                    <button type="button" onClick={() => removeExistingImage(url)}>Remover</button>
+                    <span>
+                      {fileNameFromUrl(url)}
+                      {existingImages[0] === url ? " (capa)" : ""}
+                    </span>
+                    <div className="admin-upload-chip-actions">
+                      <button className="move" type="button" onClick={() => moveExistingImage(url, -1)} disabled={existingImages.indexOf(url) === 0}>
+                        ↑
+                      </button>
+                      <button
+                        className="move"
+                        type="button"
+                        onClick={() => moveExistingImage(url, 1)}
+                        disabled={existingImages.indexOf(url) === existingImages.length - 1}
+                      >
+                        ↓
+                      </button>
+                      <button className="remove" type="button" onClick={() => removeExistingImage(url)}>Remover</button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
             {form.files.length > 0 && (
-              <div className="hint">{form.files.length} nova(s) imagem(ns) selecionada(s).</div>
+              <div className="admin-upload-list">
+                {form.files.map((file, index) => (
+                  <div className="admin-upload-chip" key={`${file.name}-${file.lastModified}-${index}`}>
+                    <span>
+                      {file.name}
+                      {index === 0 && !existingImages.length ? " (capa)" : ""}
+                    </span>
+                    <div className="admin-upload-chip-actions">
+                      <button className="move" type="button" onClick={() => moveSelectedFile(index, -1)} disabled={index === 0}>
+                        ↑
+                      </button>
+                      <button
+                        className="move"
+                        type="button"
+                        onClick={() => moveSelectedFile(index, 1)}
+                        disabled={index === form.files.length - 1}
+                      >
+                        ↓
+                      </button>
+                      <button className="remove" type="button" onClick={() => removeSelectedFile(index)}>Remover</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
+            {form.files.length > 0 && <div className="hint">A primeira imagem da lista vira a capa se nao houver URL manual.</div>}
           </div>
 
           <div className="admin-upload-box">

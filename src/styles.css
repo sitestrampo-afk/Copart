@@ -3648,6 +3648,25 @@ h3,
   cursor: pointer;
 }
 
+.admin-upload-chip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-upload-chip-actions .move {
+  color: #183552;
+}
+
+.admin-upload-chip-actions .remove {
+  color: #b32828;
+}
+
+.admin-upload-chip button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .admin-form-actions {
   display: flex;
   gap: 12px;
