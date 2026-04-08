@@ -114,6 +114,7 @@ export default function AdminAuctions() {
   const [submitting, setSubmitting] = useState(false);
   const [existingImages, setExistingImages] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
+  const [selectedImagePreviews, setSelectedImagePreviews] = useState([]);
 
   function loadData() {
     const token = localStorage.getItem("adminToken");
@@ -139,6 +140,23 @@ export default function AdminAuctions() {
     }
   }, [routeType, editingId]);
 
+  useEffect(() => {
+    const previews = [];
+    for (const file of form.files || []) {
+      if (file instanceof File && file.type.startsWith("image/")) {
+        previews.push(URL.createObjectURL(file));
+      } else {
+        previews.push("");
+      }
+    }
+    setSelectedImagePreviews(previews);
+    return () => {
+      previews.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [form.files]);
+
   async function uploadFiles(files) {
     if (!files || files.length === 0) return [];
     const token = localStorage.getItem("adminToken");
@@ -155,6 +173,7 @@ export default function AdminAuctions() {
     setEditingId(null);
     setExistingImages([]);
     setExistingAttachments([]);
+    setSelectedImagePreviews([]);
     setShowEditor(false);
   }
 
@@ -631,52 +650,70 @@ export default function AdminAuctions() {
               onChange={(e) => setForm({ ...form, files: Array.from(e.target.files || []) })}
             />
             {!!existingImages.length && (
-              <div className="admin-upload-list">
+              <div className="admin-upload-preview-grid">
                 {existingImages.map((url) => (
-                  <div className="admin-upload-chip" key={url}>
-                    <span>
-                      {fileNameFromUrl(url)}
-                      {existingImages[0] === url ? " (capa)" : ""}
-                    </span>
-                    <div className="admin-upload-chip-actions">
-                      <button className="move" type="button" onClick={() => moveExistingImage(url, -1)} disabled={existingImages.indexOf(url) === 0}>
-                        ↑
-                      </button>
-                      <button
-                        className="move"
-                        type="button"
-                        onClick={() => moveExistingImage(url, 1)}
-                        disabled={existingImages.indexOf(url) === existingImages.length - 1}
-                      >
-                        ↓
-                      </button>
-                      <button className="remove" type="button" onClick={() => removeExistingImage(url)}>Remover</button>
+                  <div className="admin-upload-preview-card" key={url}>
+                    <div className="admin-upload-preview-image">
+                      <img src={url} alt={fileNameFromUrl(url)} />
+                    </div>
+                    <div className="admin-upload-preview-info">
+                      <span>
+                        {fileNameFromUrl(url)}
+                        {existingImages[0] === url ? " (capa)" : ""}
+                      </span>
+                      <div className="admin-upload-chip-actions">
+                        <button className="move" type="button" onClick={() => moveExistingImage(url, -1)} disabled={existingImages.indexOf(url) === 0}>
+                          ↑
+                        </button>
+                        <button
+                          className="move"
+                          type="button"
+                          onClick={() => moveExistingImage(url, 1)}
+                          disabled={existingImages.indexOf(url) === existingImages.length - 1}
+                        >
+                          ↓
+                        </button>
+                        <button className="remove" type="button" onClick={() => removeExistingImage(url)}>
+                          Remover
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
             {form.files.length > 0 && (
-              <div className="admin-upload-list">
+              <div className="admin-upload-preview-grid">
                 {form.files.map((file, index) => (
-                  <div className="admin-upload-chip" key={`${file.name}-${file.lastModified}-${index}`}>
-                    <span>
-                      {file.name}
-                      {index === 0 && !existingImages.length ? " (capa)" : ""}
-                    </span>
-                    <div className="admin-upload-chip-actions">
-                      <button className="move" type="button" onClick={() => moveSelectedFile(index, -1)} disabled={index === 0}>
-                        ↑
-                      </button>
-                      <button
-                        className="move"
-                        type="button"
-                        onClick={() => moveSelectedFile(index, 1)}
-                        disabled={index === form.files.length - 1}
-                      >
-                        ↓
-                      </button>
-                      <button className="remove" type="button" onClick={() => removeSelectedFile(index)}>Remover</button>
+                  <div className="admin-upload-preview-card" key={`${file.name}-${file.lastModified}-${index}`}>
+                    <div className="admin-upload-preview-image">
+                      {selectedImagePreviews[index] ? (
+                        <img src={selectedImagePreviews[index]} alt={file.name} />
+                      ) : (
+                        <div className="admin-upload-preview-empty">Sem preview</div>
+                      )}
+                    </div>
+                    <div className="admin-upload-preview-info">
+                      <span>
+                        {file.name}
+                        {index === 0 && !existingImages.length ? " (capa)" : ""}
+                      </span>
+                      <div className="admin-upload-chip-actions">
+                        <button className="move" type="button" onClick={() => moveSelectedFile(index, -1)} disabled={index === 0}>
+                          ↑
+                        </button>
+                        <button
+                          className="move"
+                          type="button"
+                          onClick={() => moveSelectedFile(index, 1)}
+                          disabled={index === form.files.length - 1}
+                        >
+                          ↓
+                        </button>
+                        <button className="remove" type="button" onClick={() => removeSelectedFile(index)}>
+                          Remover
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

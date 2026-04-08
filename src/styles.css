@@ -3614,44 +3614,75 @@ h3,
   color: #183552;
 }
 
-.admin-upload-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.admin-upload-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
 }
 
-.admin-upload-chip {
-  display: inline-flex;
-  align-items: center;
+.admin-upload-preview-card {
+  display: grid;
   gap: 10px;
-  max-width: 100%;
-  padding: 10px 12px;
-  border-radius: 999px;
+  padding: 10px;
+  border-radius: 16px;
   background: #eff5fb;
   border: 1px solid #d7e2ee;
 }
 
-.admin-upload-chip span {
-  max-width: 260px;
+.admin-upload-preview-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #dde7f2;
+}
+
+.admin-upload-preview-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.admin-upload-preview-empty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #5b7188;
+  font-size: 0.85rem;
+}
+
+.admin-upload-preview-info {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-upload-preview-info > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #234566;
   font-size: 0.9rem;
-}
-
-.admin-upload-chip button {
-  border: 0;
-  background: transparent;
-  color: #b32828;
-  font-weight: 700;
-  cursor: pointer;
+  font-weight: 600;
 }
 
 .admin-upload-chip-actions {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+
+.admin-upload-chip-actions button {
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #183552;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .admin-upload-chip-actions .move {
@@ -3660,6 +3691,7 @@ h3,
 
 .admin-upload-chip-actions .remove {
   color: #b32828;
+  background: #fff3f3;
 }
 
 .admin-upload-chip button:disabled {
