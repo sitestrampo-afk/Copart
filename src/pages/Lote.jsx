@@ -352,26 +352,29 @@ export default function Lote() {
                 <aside className="lot-side" aria-label="Resumo do leilao">
                   <div className="lot-time-card">
                     <div className="lot-time-title">{isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}</div>
-                    {endsAt && isOpen && countdown && (
-                      <div className="lot-time-grid" aria-label="Contador regressivo">
-                        <div>
-                          <strong>{countdown.days}</strong>
-                          <span>Dias</span>
-                        </div>
-                        <div>
-                          <strong>{countdown.hours}</strong>
-                          <span>Horas</span>
-                        </div>
-                        <div>
-                          <strong>{countdown.minutes}</strong>
-                          <span>Min</span>
-                        </div>
-                        <div>
-                          <strong>{countdown.seconds}</strong>
-                          <span>Seg</span>
+                    {endsAt && isOpen && countdown ? (
+                      <div className="lot-countdown" aria-label="Contador regressivo">
+                        <div className="lot-countdown-label">Tempo restante</div>
+                        <div className="lot-countdown-grid">
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.days}</strong>
+                            <span>Dias</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.hours}</strong>
+                            <span>Horas</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.minutes}</strong>
+                            <span>Min</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.seconds}</strong>
+                            <span>Seg</span>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                     <div className="lot-time-meta">
                       <span>{isOpen ? "Encerramento" : "Encerrado em"}</span>
                       <strong>{formatDateTimeBR(auction.ends_at)}</strong>
