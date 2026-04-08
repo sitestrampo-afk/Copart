@@ -68,6 +68,11 @@ function fileNameFromUrl(url) {
   return String(url).split("/").pop() || url;
 }
 
+function getLocalDateTimeInputValue(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function moveArrayItem(items, fromIndex, toIndex) {
   if (!Array.isArray(items)) return [];
   if (fromIndex < 0 || fromIndex >= items.length) return items;
@@ -538,6 +543,8 @@ export default function AdminAuctions() {
               type="datetime-local"
               value={form.starts_at}
               onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+              min={editingId ? undefined : getLocalDateTimeInputValue()}
+              required
             />
           </label>
 
@@ -547,6 +554,7 @@ export default function AdminAuctions() {
               type="datetime-local"
               value={form.ends_at}
               onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
+              min={form.starts_at || (editingId ? undefined : getLocalDateTimeInputValue())}
               required
             />
           </label>
