@@ -1,6 +1,6 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiPost } from "../services/api.js";
+import { apiBaseUrl, apiPost } from "../services/api.js";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -20,7 +20,12 @@ export default function AdminLogin() {
       localStorage.setItem("adminToken", data.token);
       navigate("/admin/dashboard");
     } catch (err) {
-      setError(err.message);
+      const msg = err.message || "Erro na requisicao";
+      if (msg.toLowerCase().includes("failed to fetch") || msg.toLowerCase().includes("networkerror")) {
+        setError(`Nao foi possivel conectar ao backend em ${apiBaseUrl}. Verifique CORS, URL e deploy do backend.`);
+        return;
+      }
+      setError(msg);
     }
   }
 
@@ -28,6 +33,7 @@ export default function AdminLogin() {
     <main className="admin-login">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Admin - Acesso Restrito</h2>
+        <div className="helper-text">Backend ativo: {apiBaseUrl}</div>
         <label>
           Email
           <input
@@ -63,4 +69,3 @@ export default function AdminLogin() {
     </main>
   );
 }
-
