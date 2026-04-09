@@ -16,6 +16,14 @@ function formatAuctionType(auction) {
   return auction.listing_type === "leilao" ? "Leilao" : "Lote";
 }
 
+function formatStatusLabel(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "agendado") return "Em breve";
+  if (normalized === "aberto") return "Recebendo lances";
+  if (normalized === "encerrado") return "Encerrado";
+  return status || "-";
+}
+
 export default function Categorias() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
@@ -101,7 +109,7 @@ export default function Categorias() {
                   </div>
                   <div>
                     <span>Status</span>
-                    <strong>{auction.auction_status || "-"}</strong>
+                    <strong>{formatStatusLabel(auction.auction_status)}</strong>
                   </div>
                   <div>
                     <span>Categoria</span>

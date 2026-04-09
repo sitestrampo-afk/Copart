@@ -147,19 +147,25 @@ export default function Lote() {
   const endsAt = parseDateTimeValue(auction?.ends_at);
   const now = tick;
   const isStarted = !startsAt || startsAt.getTime() <= now;
-  const isOpen = (!endsAt || endsAt.getTime() > now) && isStarted && Number(auction?.is_published ?? 1) === 1;
+  const isPublished = Number(auction?.is_published ?? 1) === 1;
+  const isUpcoming = isPublished && startsAt && startsAt.getTime() > now;
+  const isOpen = isPublished && !isUpcoming && (!endsAt || endsAt.getTime() > now) && isStarted;
   const primaryStatus = documentState.primary?.status || null;
   const residenceStatus = documentState.residence?.status || null;
   const canBid = !!token && primaryStatus === "aprovado" && residenceStatus === "aprovado" && isOpen;
   const bidButtonLabel = !token
-    ? "Entre para dar lance"
+    ? isUpcoming
+      ? "Em breve"
+      : "Entre para dar lance"
     : primaryStatus !== "aprovado"
       ? "Documento principal pendente"
       : residenceStatus !== "aprovado"
         ? "Comprovante pendente"
-        : submitting
-          ? "Enviando..."
-          : "Enviar lance";
+        : isUpcoming
+          ? "Em breve"
+          : submitting
+            ? "Enviando..."
+            : "Enviar lance";
   const timeLeftMs = endsAt ? endsAt.getTime() - now : null;
   const countdown = endsAt && timeLeftMs !== null ? formatCountdown(timeLeftMs) : null;
 
@@ -317,12 +323,13 @@ export default function Lote() {
                 </div>
 
                 <section className="lot-bid" aria-label="Painel de lances">
-                  <div className={`lot-status ${isOpen ? "open" : "closed"}`}>
-                    {isOpen ? "Recebendo lances" : "Lote encerrado"}
+                  <div className={`lot-status ${isUpcoming ? "upcoming" : isOpen ? "open" : "closed"}`}>
+                    {isUpcoming ? "Em breve" : isOpen ? "Recebendo lances" : "Lote encerrado"}
                   </div>
 
                   <div className="lot-bid-body">
                     <h2>De seu lance</h2>
+                    {isUpcoming ? <div className="helper-text">Este lote ainda nao abriu para lances e ficara disponivel em breve.</div> : null}
 
                     <div className="lot-quick">
                       {quickSteps.map((value) => (
@@ -373,7 +380,10 @@ export default function Lote() {
 
                 <aside className="lot-side" aria-label="Resumo do leilao">
                   <div className="lot-time-card">
-                    <div className="lot-time-title">{isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}</div>
+                    <div className="lot-time-title">
+                      {isUpcoming ? "LEILAO EM BREVE" : isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}
+                    </div>
+                    {isUpcoming ? <div className="lot-upcoming-note">Agendado para inicio futuro.</div> : null}
                     {endsAt && isOpen && countdown ? (
                       <div className="lot-countdown" aria-label="Contador regressivo">
                         <div className="lot-countdown-label">Tempo restante</div>
@@ -398,7 +408,7 @@ export default function Lote() {
                       </div>
                     ) : null}
                     <div className="lot-time-meta">
-                      <span>{isOpen ? "Encerramento" : "Encerrado em"}</span>
+                      <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
                       <strong>{formatDateTimeBR(auction.ends_at)}</strong>
                     </div>
                   </div>

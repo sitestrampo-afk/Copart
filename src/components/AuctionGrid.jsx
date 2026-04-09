@@ -32,6 +32,14 @@ const fallback = [
   }
 ];
 
+function getAuctionStatusLabel(auction) {
+  const status = String(auction?.auction_status || auction?.status || "").toLowerCase();
+  if (status === "agendado") return "EM BREVE";
+  if (status === "aberto") return "RECEBENDO LANCES";
+  if (status === "encerrado") return "ENCERRADO";
+  return "VER LOTE";
+}
+
 export default function AuctionGrid({ auctions = fallback }) {
   function formatMoney(value) {
     if (value === undefined || value === null || value === "") return "-";
@@ -49,6 +57,13 @@ export default function AuctionGrid({ auctions = fallback }) {
       <div className="cards cards-highlight">
         {auctions.map((auction, index) => {
           const imageUrl = auction.image_url || auction.images?.[0] || auction.image || (index % 2 ? banner2 : banner1);
+          const statusLabel = getAuctionStatusLabel(auction);
+          const statusClass =
+            String(auction?.auction_status || auction?.status || "").toLowerCase() === "agendado"
+              ? "upcoming"
+              : String(auction?.auction_status || auction?.status || "").toLowerCase() === "encerrado"
+                ? "closed"
+                : "open";
           return (
             <article key={auction.id || index} className="auction-card">
               <div
@@ -93,8 +108,8 @@ export default function AuctionGrid({ auctions = fallback }) {
                 </div>
               </div>
               <div className="auction-footer">
-                <Link className="cta" to={`/lote/${auction.id}`}>
-                  RECEBENDO LANCES
+                <Link className={`cta ${statusClass}`} to={`/lote/${auction.id}`}>
+                  {statusLabel}
                 </Link>
               </div>
             </article>
