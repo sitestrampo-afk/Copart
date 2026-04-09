@@ -1103,6 +1103,21 @@ h3,
     min-width: 0;
 }
 
+.password-toggle {
+    border: 1px solid #d8e3ef;
+    background: #f6f9fc;
+    color: #183552;
+    font-weight: 700;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.password-toggle:hover {
+    background: #eef4fb;
+}
+
 .icon-button {
     padding: 10px 12px;
     border-radius: 12px;

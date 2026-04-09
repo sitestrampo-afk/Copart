@@ -7,6 +7,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("leandroaugustomiranda761@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -39,13 +40,22 @@ export default function AdminLogin() {
         </label>
         <label>
           Senha
-          <input
-            type="password"
-            placeholder="Digite sua senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Digite sua senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              className="password-toggle"
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? "Ocultar senha" : "Ver senha"}
+            </button>
+          </div>
         </label>
         {error && <div className="alert">{error}</div>}
         <button className="cta" type="submit">Entrar</button>
