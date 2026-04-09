@@ -105,7 +105,7 @@ export async function apiPost(path, body) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+      "Content-Type": "application/x-www-form-urlencoded"
     },
     body: payload
   });
@@ -123,7 +123,7 @@ export async function apiPostAuth(path, body, token) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+      "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Bearer ${safeToken}`,
       "X-Auth-Token": safeToken
     },
@@ -143,7 +143,7 @@ export async function apiPutAuth(path, body, token) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+      "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Bearer ${safeToken}`,
       "X-Auth-Token": safeToken
     },
