@@ -19,6 +19,8 @@ const emptyForm = {
   category_id: "",
   starts_at: "",
   ends_at: "",
+  start_now: false,
+  duration_days: "",
   location: "",
   legal_status: "Extrajudicial",
   auction_mode: "Online",
@@ -58,6 +60,20 @@ function formatDate(value) {
   return formatDateTimeBR(value);
 }
 
+function getLocalDateTimeInputValue(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function addDaysToLocalDateTime(value, days) {
+  if (!value || !days) return "";
+  const base = new Date(value.replace("T", " "));
+  if (Number.isNaN(base.getTime())) return "";
+  const next = new Date(base.getTime() + Number(days) * 24 * 60 * 60 * 1000);
+  const local = new Date(next.getTime() - next.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function toDateTimeLocal(value) {
   if (!value) return "";
   return String(value).slice(0, 16).replace(" ", "T");
@@ -66,11 +82,6 @@ function toDateTimeLocal(value) {
 function fileNameFromUrl(url) {
   if (!url) return "";
   return String(url).split("/").pop() || url;
-}
-
-function getLocalDateTimeInputValue(date = new Date()) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
 }
 
 function moveArrayItem(items, fromIndex, toIndex) {
@@ -183,18 +194,21 @@ export default function AdminAuctions() {
     setMessage("");
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const listingType = normalizeListingType(form.listing_type);
-      const uploadedImages = await uploadFiles(form.files);
-      const uploadedAttachments = await uploadFiles(form.attachmentFiles);
+    const token = localStorage.getItem("adminToken");
+    const listingType = normalizeListingType(form.listing_type);
+    const uploadedImages = await uploadFiles(form.files);
+    const uploadedAttachments = await uploadFiles(form.attachmentFiles);
 
-      const images = [...existingImages, ...uploadedImages];
-      const attachments = [...existingAttachments, ...uploadedAttachments];
-      const imageUrl = form.image_url.trim() || images[0] || "";
-      const lotNumber = listingType === "lote" ? form.lot_number.trim() : "";
-      const startingPrice = listingType === "lote" ? Number(form.starting_price || 0) : 0;
-      const minimumIncrement = listingType === "lote" ? Number(form.minimum_bid_increment || 10) : 0;
-      const parentAuctionId = listingType === "lote" && form.parent_auction_id ? Number(form.parent_auction_id) : null;
+    const images = [...existingImages, ...uploadedImages];
+    const attachments = [...existingAttachments, ...uploadedAttachments];
+    const imageUrl = form.image_url.trim() || images[0] || "";
+    const startsAt = form.start_now ? getLocalDateTimeInputValue() : form.starts_at;
+    const durationDays = form.duration_days ? Math.min(60, Math.max(1, Number(form.duration_days))) : null;
+    const endsAt = durationDays ? addDaysToLocalDateTime(startsAt, durationDays) : form.ends_at;
+    const lotNumber = listingType === "lote" ? form.lot_number.trim() : "";
+    const startingPrice = listingType === "lote" ? Number(form.starting_price || 0) : 0;
+    const minimumIncrement = listingType === "lote" ? Number(form.minimum_bid_increment || 10) : 0;
+    const parentAuctionId = listingType === "lote" && form.parent_auction_id ? Number(form.parent_auction_id) : null;
 
       const payload = {
         listing_type: listingType,
@@ -203,8 +217,9 @@ export default function AdminAuctions() {
         starting_price: startingPrice,
         minimum_bid_increment: minimumIncrement,
         category_id: form.category_id ? Number(form.category_id) : null,
-        starts_at: form.starts_at || null,
-        ends_at: form.ends_at || null,
+        starts_at: startsAt || null,
+        ends_at: endsAt || null,
+        duration_days: durationDays,
         location: form.location.trim(),
         legal_status: form.legal_status.trim(),
         auction_mode: form.auction_mode.trim(),
@@ -243,18 +258,20 @@ export default function AdminAuctions() {
     setExistingAttachments(Array.isArray(item.attachments) ? item.attachments : []);
     const listingType = normalizeListingType(item.listing_type);
     setShowEditor(true);
-    setForm({
-      listing_type: listingType,
-      title: item.title || "",
-      lot_number: item.lot_number || "",
-      starting_price: item.starting_price || "",
-      minimum_bid_increment: item.minimum_bid_increment || "10",
-      category_id: item.category_id || "",
-      starts_at: toDateTimeLocal(item.starts_at),
-      ends_at: toDateTimeLocal(item.ends_at),
-      location: item.location || "",
-      legal_status: item.legal_status || "Extrajudicial",
-      auction_mode: item.auction_mode || "Online",
+      setForm({
+        listing_type: listingType,
+        title: item.title || "",
+        lot_number: item.lot_number || "",
+        starting_price: item.starting_price || "",
+        minimum_bid_increment: item.minimum_bid_increment || "10",
+        category_id: item.category_id || "",
+        starts_at: toDateTimeLocal(item.starts_at),
+        ends_at: toDateTimeLocal(item.ends_at),
+        start_now: false,
+        duration_days: "",
+        location: item.location || "",
+        legal_status: item.legal_status || "Extrajudicial",
+        auction_mode: item.auction_mode || "Online",
       parent_auction_id: item.parent_auction_id || "",
       image_url: item.image_url || "",
       description: item.description || "",
@@ -406,7 +423,9 @@ export default function AdminAuctions() {
                   listing_type: routeType,
                   lot_number: routeType === "lote" ? prev.lot_number : "",
                   starting_price: routeType === "lote" ? prev.starting_price : "",
-                  minimum_bid_increment: routeType === "lote" ? prev.minimum_bid_increment || "10" : "0"
+                  minimum_bid_increment: routeType === "lote" ? prev.minimum_bid_increment || "10" : "0",
+                  start_now: false,
+                  duration_days: ""
                 }));
                 setShowEditor(true);
               }}
@@ -561,9 +580,38 @@ export default function AdminAuctions() {
             <input
               type="datetime-local"
               value={form.starts_at}
-              onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+              onChange={(e) => setForm({ ...form, starts_at: e.target.value, start_now: false })}
               min={editingId ? undefined : getLocalDateTimeInputValue()}
               required
+              disabled={form.start_now}
+            />
+          </label>
+
+          <label className="checkbox-inline admin-check-publish">
+            <input
+              type="checkbox"
+              checked={form.start_now}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  start_now: e.target.checked,
+                  starts_at: e.target.checked ? getLocalDateTimeInputValue() : form.starts_at
+                })
+              }
+            />
+            Iniciar agora
+          </label>
+
+          <label className="admin-field">
+            <span>Duracao em dias (opcional, max 60)</span>
+            <input
+              type="number"
+              min="1"
+              max="60"
+              step="1"
+              value={form.duration_days}
+              onChange={(e) => setForm({ ...form, duration_days: e.target.value })}
+              placeholder="Ex: 7"
             />
           </label>
 
@@ -574,7 +622,8 @@ export default function AdminAuctions() {
               value={form.ends_at}
               onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
               min={form.starts_at || (editingId ? undefined : getLocalDateTimeInputValue())}
-              required
+              required={!form.duration_days}
+              disabled={!!form.duration_days}
             />
           </label>
 
