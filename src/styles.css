@@ -3702,6 +3702,20 @@ h3,
   font-weight: 600;
 }
 
+.cover-badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #dff0e5;
+  color: #1c7a45;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .admin-upload-chip-actions {
   display: inline-flex;
   align-items: center;

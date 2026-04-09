@@ -201,7 +201,7 @@ export default function AdminAuctions() {
 
     const images = [...existingImages, ...uploadedImages];
     const attachments = [...existingAttachments, ...uploadedAttachments];
-    const imageUrl = form.image_url.trim() || images[0] || "";
+    const imageUrl = images[0] || form.image_url.trim() || "";
     const startsAt = form.start_now ? getLocalDateTimeInputValue() : form.starts_at;
     const durationDays = form.duration_days ? Math.min(60, Math.max(1, Number(form.duration_days))) : null;
     const endsAt = durationDays ? addDaysToLocalDateTime(startsAt, durationDays) : form.ends_at;
@@ -637,7 +637,7 @@ export default function AdminAuctions() {
           </label>
 
           <label className="admin-field">
-            <span>URL da imagem de capa (opcional)</span>
+            <span>URL da vitrine (opcional, usado apenas se nao houver imagem na lista)</span>
             <input
               value={form.image_url}
               onChange={(e) => setForm({ ...form, image_url: e.target.value })}
@@ -706,10 +706,8 @@ export default function AdminAuctions() {
                       <img src={url} alt={fileNameFromUrl(url)} />
                     </div>
                     <div className="admin-upload-preview-info">
-                      <span>
-                        {fileNameFromUrl(url)}
-                        {existingImages[0] === url ? " (capa)" : ""}
-                      </span>
+                      <span>{fileNameFromUrl(url)}</span>
+                      {existingImages[0] === url ? <span className="cover-badge">Vitrine</span> : null}
                       <div className="admin-upload-chip-actions">
                         <button className="move" type="button" onClick={() => moveExistingImage(url, -1)} disabled={existingImages.indexOf(url) === 0}>
                           ↑
@@ -743,10 +741,8 @@ export default function AdminAuctions() {
                       )}
                     </div>
                     <div className="admin-upload-preview-info">
-                      <span>
-                        {file.name}
-                        {index === 0 && !existingImages.length ? " (capa)" : ""}
-                      </span>
+                      <span>{file.name}</span>
+                      {index === 0 && !existingImages.length ? <span className="cover-badge">Vitrine</span> : null}
                       <div className="admin-upload-chip-actions">
                         <button className="move" type="button" onClick={() => moveSelectedFile(index, -1)} disabled={index === 0}>
                           ↑
@@ -768,7 +764,7 @@ export default function AdminAuctions() {
                 ))}
               </div>
             )}
-            {form.files.length > 0 && <div className="hint">A primeira imagem da lista vira a capa se nao houver URL manual.</div>}
+            {form.files.length > 0 && <div className="hint">A primeira imagem da lista vira a vitrine do lote ou leilao.</div>}
           </div>
 
           <div className="admin-upload-box">
