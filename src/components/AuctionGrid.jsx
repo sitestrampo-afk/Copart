@@ -34,6 +34,13 @@ const fallback = [
 
 function getAuctionStatusLabel(auction) {
   const status = String(auction?.auction_status || auction?.status || "").toLowerCase();
+  const listingType = String(auction?.listing_type || "lote").toLowerCase();
+  if (listingType === "leilao") {
+    if (status === "agendado") return "PASTA EM BREVE";
+    if (status === "aberto") return "ABRIR PASTA";
+    if (status === "encerrado") return "PASTA ENCERRADA";
+    return "ABRIR PASTA";
+  }
   if (status === "agendado") return "EM BREVE";
   if (status === "aberto") return "RECEBENDO LANCES";
   if (status === "encerrado") return "ENCERRADO";
@@ -58,6 +65,8 @@ export default function AuctionGrid({ auctions = fallback }) {
         {auctions.map((auction, index) => {
           const imageUrl = auction.image_url || auction.images?.[0] || auction.image || (index % 2 ? banner2 : banner1);
           const statusLabel = getAuctionStatusLabel(auction);
+          const listingType = String(auction?.listing_type || "lote").toLowerCase();
+          const routePath = listingType === "leilao" ? `/leilao/${auction.id}` : `/lote/${auction.id}`;
           const statusClass =
             String(auction?.auction_status || auction?.status || "").toLowerCase() === "agendado"
               ? "upcoming"
@@ -108,7 +117,7 @@ export default function AuctionGrid({ auctions = fallback }) {
                 </div>
               </div>
               <div className="auction-footer">
-                <Link className={`cta ${statusClass}`} to={`/lote/${auction.id}`}>
+                <Link className={`cta ${statusClass}`} to={routePath}>
                   {statusLabel}
                 </Link>
               </div>

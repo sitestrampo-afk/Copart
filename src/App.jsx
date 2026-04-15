@@ -34,6 +34,7 @@ export default function App() {
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/categorias" element={<Categorias />} />
       <Route path="/lote/:id" element={<Lote />} />
+      <Route path="/leilao/:id" element={<Lote />} />
 
       <Route path="/confirmar" element={<Confirmacao />} />
       <Route path="/verificar" element={<ReenviarConfirmacao />} />

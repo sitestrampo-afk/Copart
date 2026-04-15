@@ -16,6 +16,10 @@ function formatAuctionType(auction) {
   return auction.listing_type === "leilao" ? "Leilao" : "Lote";
 }
 
+function getAuctionRoute(auction) {
+  return auction.listing_type === "leilao" ? `/leilao/${auction.id}` : `/lote/${auction.id}`;
+}
+
 function formatStatusLabel(status) {
   const normalized = String(status || "").toLowerCase();
   if (normalized === "agendado") return "Em breve";
@@ -88,7 +92,7 @@ export default function Categorias() {
         <div className="cards cards-highlight">
           {auctions.map((auction, index) => (
             <article key={auction.id} className="auction-card category-card">
-              <Link to={`/lote/${auction.id}`} className="auction-image-link">
+              <Link to={getAuctionRoute(auction)} className="auction-image-link">
                 <div
                   className="auction-image"
                   style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
@@ -96,7 +100,7 @@ export default function Categorias() {
               </Link>
               <div className="auction-body">
                 <h3>
-                  <Link to={`/lote/${auction.id}`}>{auction.title}</Link>
+                  <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
                 </h3>
                 <p>
                   {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
@@ -118,8 +122,8 @@ export default function Categorias() {
                 </div>
               </div>
               <div className="auction-footer">
-                <Link className="cta" to={`/lote/${auction.id}`}>
-                  Ver lote
+                <Link className="cta" to={getAuctionRoute(auction)}>
+                  {auction.listing_type === "leilao" ? "Abrir pasta" : "Ver lote"}
                 </Link>
               </div>
             </article>

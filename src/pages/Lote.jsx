@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import { apiGet, apiGetAuth, apiPost, apiPostAuth } from "../services/api.js";
@@ -67,8 +67,17 @@ function formatCurrencyBR(value) {
   return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatStatusLabel(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "agendado") return "Em breve";
+  if (normalized === "aberto") return "Recebendo lances";
+  if (normalized === "encerrado") return "Encerrado";
+  return status || "-";
+}
+
 export default function Lote() {
   const { id } = useParams();
+  const location = useLocation();
   const auctionId = Number(id);
   const token = localStorage.getItem("userToken") || "";
 
@@ -80,6 +89,7 @@ export default function Lote() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [tick, setTick] = useState(Date.now());
+  const [childLots, setChildLots] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -150,6 +160,7 @@ export default function Lote() {
   const isPublished = Number(auction?.is_published ?? 1) === 1;
   const isUpcoming = isPublished && startsAt && startsAt.getTime() > now;
   const isOpen = isPublished && !isUpcoming && (!endsAt || endsAt.getTime() > now) && isStarted;
+  const isLeilaoFolder = String(location.pathname || "").startsWith("/leilao/") || String(auction?.listing_type || "").toLowerCase() === "leilao";
   const primaryStatus = documentState.primary?.status || null;
   const residenceStatus = documentState.residence?.status || null;
   const canBid = !!token && primaryStatus === "aprovado" && residenceStatus === "aprovado" && isOpen;
@@ -166,8 +177,9 @@ export default function Lote() {
           : submitting
             ? "Enviando..."
             : "Enviar lance";
-  const timeLeftMs = endsAt ? endsAt.getTime() - now : null;
-  const countdown = endsAt && timeLeftMs !== null ? formatCountdown(timeLeftMs) : null;
+  const countdownTarget = isUpcoming ? startsAt : endsAt;
+  const timeLeftMs = countdownTarget ? countdownTarget.getTime() - now : null;
+  const countdown = countdownTarget && timeLeftMs !== null ? formatCountdown(timeLeftMs) : null;
 
   useEffect(() => {
     // Keep countdown ticking while the page is open.
@@ -175,12 +187,38 @@ export default function Lote() {
     return () => clearInterval(handle);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    async function loadChildLots() {
+      if (!auction || !isLeilaoFolder) {
+        setChildLots([]);
+        return;
+      }
+      try {
+        const response = await apiGet(`/api/auctions?type=lote&parent_id=${auctionId}`);
+        if (!active) return;
+        setChildLots(Array.isArray(response.data) ? response.data : []);
+      } catch {
+        if (!active) return;
+        setChildLots([]);
+      }
+    }
+    loadChildLots();
+    return () => {
+      active = false;
+    };
+  }, [auction, auctionId, isLeilaoFolder]);
+
   async function refreshAuction() {
     const refreshed = await apiGet(`/api/auctions/${auctionId}`);
     setAuction(refreshed.data);
   }
 
   async function submitBid() {
+    if (isLeilaoFolder) {
+      setError("Abra um lote dentro desta pasta para dar lance.");
+      return;
+    }
     setError("");
     setSuccess("");
     if (!token) {
@@ -231,14 +269,173 @@ export default function Lote() {
               {auction?.legal_status || "Extrajudicial"}
             </button>
             <button className="cta" type="button">
-              Habilitar-se para leilao
+              {isLeilaoFolder ? "Abrir pasta" : "Habilitar-se para leilao"}
             </button>
           </div>
         </div>
 
         {error && <div className="alert">{error}</div>}
 
-        {auction && (
+        {auction && isLeilaoFolder ? (
+          <section className="lot-shell lot-folder-shell">
+            <div className="lot-main">
+              <div className="lot-headline">
+                <div>
+                  <h1 className="lot-title">{auction.title}</h1>
+                  <div className="lot-tags">
+                    <span className="tag red">{auction.legal_status || "EXTRAJUDICIAL"}</span>
+                    <span className="tag blue">Pasta do leilao</span>
+                    <span className="tag gray">{auction.category_name || "SEM CATEGORIA"}</span>
+                  </div>
+                </div>
+                <div className="lot-header-stats">
+                  <div>
+                    <span>Lotes</span>
+                    <strong>{childLots.length}</strong>
+                  </div>
+                  <div>
+                    <span>Views</span>
+                    <strong>{auction.views_count || 0}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lot-grid">
+                <div className="lot-left">
+                  <div className="lot-gallery">
+                    <div className="lot-image-wrap">
+                      {mainImage ? <img className="lot-image" src={mainImage} alt={auction.title || "Imagem do leilao"} /> : <div className="lot-image empty" />}
+                    </div>
+                  </div>
+
+                  <section className="lot-info-box" aria-label="Informacoes do leilao">
+                    <div className="lot-info-head">
+                      <h3>Informacoes</h3>
+                      <span className="lot-info-lot">Pasta</span>
+                    </div>
+                    <div className="lot-info-body">
+                      <div>
+                        <span>Inicio</span>
+                        <strong>{formatDateTimeBR(auction.starts_at)}</strong>
+                      </div>
+                      <div>
+                        <span>Termino</span>
+                        <strong>{formatDateTimeBR(auction.ends_at)}</strong>
+                      </div>
+                      <div>
+                        <span>Categoria</span>
+                        <strong>{auction.category_name || "-"}</strong>
+                      </div>
+                      <div>
+                        <span>Localidade</span>
+                        <strong>{auction.location || "-"}</strong>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                <aside className="lot-side" aria-label="Resumo do leilao">
+                  <div className={`lot-status ${isUpcoming ? "upcoming" : isOpen ? "open" : "closed"}`}>
+                    {isUpcoming ? "Em breve" : isOpen ? "Leilao aberto" : "Leilao encerrado"}
+                  </div>
+                  <div className="lot-time-card">
+                    <div className="lot-time-title">
+                      {isUpcoming ? "LEILAO ABRE EM" : isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}
+                    </div>
+                    {((isUpcoming && startsAt) || (isOpen && endsAt)) && countdown ? (
+                      <div className="lot-countdown" aria-label="Contador regressivo">
+                        <div className="lot-countdown-label">{isUpcoming ? "Tempo para abrir" : "Tempo restante"}</div>
+                        <div className="lot-countdown-grid">
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.days}</strong>
+                            <span>Dias</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.hours}</strong>
+                            <span>Horas</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.minutes}</strong>
+                            <span>Min</span>
+                          </div>
+                          <div className="lot-countdown-unit">
+                            <strong>{countdown.seconds}</strong>
+                            <span>Seg</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="lot-time-meta">
+                      <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
+                      <strong>{formatDateTimeBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+
+              <section className="lot-folder-section">
+                <div className="lot-panel-head">
+                  <h3>Lotes desta pasta</h3>
+                  <p>Clique em um lote para abrir a tela de lance.</p>
+                </div>
+                {childLots.length > 0 ? (
+                  <div className="lot-folder-grid">
+                    {childLots.map((child, index) => {
+                      const childImage = parseImages(child)[0] || child.image_url || (index % 2 ? "" : "");
+                      const childStatus = String(child.auction_status || "").toLowerCase();
+                      const childRoute = `/lote/${child.id}`;
+                      const childLabel =
+                        childStatus === "agendado" ? "Em breve" : childStatus === "encerrado" ? "Encerrado" : "Abrir lote";
+                      return (
+                        <article key={child.id} className="auction-card folder-lot-card">
+                          <Link className="auction-image-link" to={childRoute}>
+                            <div
+                              className="auction-image"
+                              style={{ backgroundImage: childImage ? `url(${childImage})` : "none" }}
+                            />
+                          </Link>
+                          <div className="auction-body">
+                            <h3>
+                              <Link to={childRoute}>{child.title}</Link>
+                            </h3>
+                            <p>
+                              {child.lot_number ? `Lote ${child.lot_number}` : "Lote"} {child.location ? `| ${child.location}` : ""}
+                            </p>
+                            <div className="auction-bids">
+                              <div>
+                                <span>Inicio</span>
+                                <strong>{formatDateTimeBR(child.starts_at)}</strong>
+                              </div>
+                              <div>
+                                <span>Termino</span>
+                                <strong>{formatDateTimeBR(child.ends_at)}</strong>
+                              </div>
+                              <div>
+                                <span>Status</span>
+                                <strong>{formatStatusLabel(child.auction_status)}</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="auction-footer">
+                            <Link className="cta" to={childRoute}>
+                              {childLabel}
+                            </Link>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="admin-empty-state">Nenhum lote foi adicionado a esta pasta ainda.</div>
+                )}
+              </section>
+            </div>
+          </section>
+        ) : auction && (
           <section className="lot-shell">
             <div className="lot-main">
               <div className="lot-headline">
@@ -384,9 +581,9 @@ export default function Lote() {
                       {isUpcoming ? "LEILAO EM BREVE" : isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}
                     </div>
                     {isUpcoming ? <div className="lot-upcoming-note">Agendado para inicio futuro.</div> : null}
-                    {endsAt && isOpen && countdown ? (
+                    {((isUpcoming && startsAt) || (isOpen && endsAt)) && countdown ? (
                       <div className="lot-countdown" aria-label="Contador regressivo">
-                        <div className="lot-countdown-label">Tempo restante</div>
+                        <div className="lot-countdown-label">{isUpcoming ? "Tempo para abrir" : "Tempo restante"}</div>
                         <div className="lot-countdown-grid">
                           <div className="lot-countdown-unit">
                             <strong>{countdown.days}</strong>
@@ -409,7 +606,7 @@ export default function Lote() {
                     ) : null}
                     <div className="lot-time-meta">
                       <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
-                      <strong>{formatDateTimeBR(auction.ends_at)}</strong>
+                      <strong>{formatDateTimeBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
                     </div>
                   </div>
 

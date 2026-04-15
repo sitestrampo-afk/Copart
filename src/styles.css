@@ -2813,6 +2813,25 @@ h3,
     border: 1px solid #dce7f3;
 }
 
+.lot-folder-section {
+    margin-top: 28px;
+}
+
+.lot-folder-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.folder-lot-card .auction-image {
+    height: 180px;
+}
+
+.folder-lot-card .auction-footer .cta {
+    background: #123f6c;
+}
+
 .lot-info-head {
     display: flex;
     justify-content: space-between;

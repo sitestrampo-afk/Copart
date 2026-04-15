@@ -1004,7 +1004,7 @@ export default function AdminAuctions() {
                     <span className="admin-row-actions">
                       <button className="ghost" type="button" onClick={() => handleEdit(item)}>Editar</button>
                       <button className="ghost" type="button" onClick={() => handleDelete(item.id)}>Remover</button>
-                      <Link className="ghost" to={`/lote/${item.id}`}>Ver</Link>
+                      <Link className="ghost" to={normalizeListingType(item.listing_type) === "leilao" ? `/leilao/${item.id}` : `/lote/${item.id}`}>Ver</Link>
                     </span>
                   </div>
                 );
