@@ -70,6 +70,14 @@ export default function Categorias() {
     if (!needle) return categories;
     return categories.filter((item) => String(item.name || "").toLowerCase().includes(needle));
   }, [categories, query]);
+  const leiloes = useMemo(
+    () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() === "leilao"),
+    [auctions]
+  );
+  const lotes = useMemo(
+    () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() !== "leilao"),
+    [auctions]
+  );
 
   return (
     <div>
@@ -89,46 +97,103 @@ export default function Categorias() {
           </div>
         ) : null}
 
-        <div className="cards cards-highlight">
-          {auctions.map((auction, index) => (
-            <article key={auction.id} className="auction-card category-card">
-              <Link to={getAuctionRoute(auction)} className="auction-image-link">
-                <div
-                  className="auction-image"
-                  style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
-                />
-              </Link>
-              <div className="auction-body">
-                <h3>
-                  <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
-                </h3>
-                <p>
-                  {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
-                  {auction.location ? `| ${auction.location}` : ""}
-                </p>
-                <div className="auction-bids">
-                  <div>
-                    <span>Lance atual</span>
-                    <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
+        {leiloes.length > 0 ? (
+          <>
+            <div className="section-title section-subtitle">
+              <h3>Leilões</h3>
+              <p>Pastas com lotes vinculados.</p>
+            </div>
+            <div className="cards cards-highlight">
+              {leiloes.map((auction, index) => (
+                <article key={auction.id} className="auction-card category-card">
+                  <Link to={getAuctionRoute(auction)} className="auction-image-link">
+                    <div
+                      className="auction-image"
+                      style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
+                    />
+                  </Link>
+                  <div className="auction-body">
+                    <h3>
+                      <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
+                    </h3>
+                    <p>
+                      {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
+                      {auction.location ? `| ${auction.location}` : ""}
+                    </p>
+                    <div className="auction-bids">
+                      <div>
+                        <span>Lance atual</span>
+                        <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
+                      </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                      </div>
+                      <div>
+                        <span>Categoria</span>
+                        <strong>{auction.category_name || "-"}</strong>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span>Status</span>
-                    <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                  <div className="auction-footer">
+                    <Link className="cta" to={getAuctionRoute(auction)}>
+                      Abrir pasta
+                    </Link>
                   </div>
-                  <div>
-                    <span>Categoria</span>
-                    <strong>{auction.category_name || "-"}</strong>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        {lotes.length > 0 ? (
+          <>
+            <div className="section-title section-subtitle">
+              <h3>Lotes</h3>
+              <p>Itens individuais para lance direto.</p>
+            </div>
+            <div className="cards cards-highlight">
+              {lotes.map((auction, index) => (
+                <article key={auction.id} className="auction-card category-card">
+                  <Link to={getAuctionRoute(auction)} className="auction-image-link">
+                    <div
+                      className="auction-image"
+                      style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
+                    />
+                  </Link>
+                  <div className="auction-body">
+                    <h3>
+                      <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
+                    </h3>
+                    <p>
+                      {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
+                      {auction.location ? `| ${auction.location}` : ""}
+                    </p>
+                    <div className="auction-bids">
+                      <div>
+                        <span>Lance atual</span>
+                        <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
+                      </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                      </div>
+                      <div>
+                        <span>Categoria</span>
+                        <strong>{auction.category_name || "-"}</strong>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="auction-footer">
-                <Link className="cta" to={getAuctionRoute(auction)}>
-                  {auction.listing_type === "leilao" ? "Abrir pasta" : "Ver lote"}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
+                  <div className="auction-footer">
+                    <Link className="cta" to={getAuctionRoute(auction)}>
+                      Ver lote
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
 
         {!loading && auctions.length === 0 ? (
           <div className="admin-empty-state">Nenhum resultado encontrado.</div>

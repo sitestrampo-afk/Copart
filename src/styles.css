@@ -205,6 +205,21 @@ h3,
     margin-bottom: 32px;
 }
 
+.section-subtitle {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.section-subtitle h3 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+}
+
+.section-subtitle p {
+    margin: 0;
+    color: #5b6c78;
+}
+
 .auction-grid {
     padding: 60px 6vw;
 }
