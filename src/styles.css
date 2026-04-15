@@ -1267,9 +1267,11 @@ h3,
 }
 
 .auction-image {
-    height: 180px;
-    background-size: cover;
+    height: 240px;
+    background-size: contain;
+    background-repeat: no-repeat;
     background-position: center;
+    background-color: #f6f8fc;
 }
 
 .auction-body {
@@ -1319,7 +1321,7 @@ h3,
 
 @media (max-width: 900px) {
     .auction-image {
-        height: 160px;
+        height: 210px;
     }
 }
 
@@ -2825,7 +2827,7 @@ h3,
 }
 
 .folder-lot-card .auction-image {
-    height: 180px;
+    height: 240px;
 }
 
 .folder-lot-card .auction-footer .cta {
