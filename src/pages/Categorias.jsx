@@ -117,21 +117,16 @@ export default function Categorias() {
                       <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
                     </h3>
                     <p>
-                      {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
-                      {auction.location ? `| ${auction.location}` : ""}
+                      Pasta do leilão {auction.location ? `| ${auction.location}` : ""}
                     </p>
                     <div className="auction-bids">
                       <div>
-                        <span>Lance atual</span>
-                        <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
+                        <span>Endereço</span>
+                        <strong>{auction.location || "Endereço fixo"}</strong>
                       </div>
                       <div>
-                        <span>Status</span>
-                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
-                      </div>
-                      <div>
-                        <span>Categoria</span>
-                        <strong>{auction.category_name || "-"}</strong>
+                        <span>Lotes dentro</span>
+                        <strong>{auction.child_lots_count ?? 0}</strong>
                       </div>
                     </div>
                   </div>

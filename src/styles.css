@@ -2871,6 +2871,44 @@ h3,
     background: #123f6c;
 }
 
+.lot-folder-summary {
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px;
+    border: 1px solid #dce7f3;
+    box-shadow: 0 16px 40px rgba(10, 25, 48, 0.08);
+    display: grid;
+    gap: 14px;
+}
+
+.lot-folder-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.lot-folder-summary-grid > div {
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #f9fcff, #f2f7fc);
+    border: 1px solid #e1ebf5;
+}
+
+.lot-folder-summary-grid span {
+    display: block;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6a8096;
+    margin-bottom: 6px;
+}
+
+.lot-folder-summary-grid strong {
+    display: block;
+    color: #12385d;
+    line-height: 1.35;
+}
+
 .lot-info-head {
     display: flex;
     justify-content: space-between;

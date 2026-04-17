@@ -16,7 +16,8 @@ const fallback = [
     current: "R$ 50.200,00",
     min: "R$ 300,00",
     image: banner1,
-    listing_type: "lote"
+    listing_type: "lote",
+    auction_status: "aberto"
   },
   {
     id: 2,
@@ -30,41 +31,26 @@ const fallback = [
     current: "R$ 9.800,00",
     min: "R$ 400,00",
     image: banner2,
-    listing_type: "lote"
+    listing_type: "lote",
+    auction_status: "aberto"
   }
 ];
-
-function getAuctionStatusLabel(auction) {
-  const status = String(auction?.auction_status || auction?.status || "").toLowerCase();
-  const listingType = String(auction?.listing_type || "lote").toLowerCase();
-  if (listingType === "leilao") {
-    if (status === "agendado") return "PASTA EM BREVE";
-    if (status === "aberto") return "ABRIR PASTA";
-    if (status === "encerrado") return "PASTA ENCERRADA";
-    return "ABRIR PASTA";
-  }
-  if (status === "agendado") return "EM BREVE";
-  if (status === "aberto") return "RECEBENDO LANCES";
-  if (status === "encerrado") return "ENCERRADO";
-  return "VER LOTE";
-}
 
 function getAuctionRoute(auction) {
   return String(auction?.listing_type || "lote").toLowerCase() === "leilao" ? `/leilao/${auction.id}` : `/lote/${auction.id}`;
 }
 
-function AuctionCard({ auction, index, sectionKey, formatMoney }) {
-  const imageUrl = auction.image_url || auction.images?.[0] || auction.image || (index % 2 ? banner2 : banner1);
-  const statusLabel = getAuctionStatusLabel(auction);
-  const statusClass =
-    String(auction?.auction_status || auction?.status || "").toLowerCase() === "agendado"
-      ? "upcoming"
-      : String(auction?.auction_status || auction?.status || "").toLowerCase() === "encerrado"
-        ? "closed"
-        : "open";
+function getAuctionStatusLabel(auction) {
+  const status = String(auction?.auction_status || auction?.status || "").toLowerCase();
+  if (status === "agendado") return "EM BREVE";
+  if (status === "encerrado") return "ENCERRADO";
+  return "VER LOTE";
+}
 
+function AuctionCard({ auction, index, formatMoney }) {
+  const imageUrl = auction.image_url || auction.images?.[0] || auction.image || (index % 2 ? banner2 : banner1);
   return (
-    <article key={`${sectionKey}-${auction.id || index}`} className="auction-card">
+    <article className="auction-card">
       <div className="auction-image" style={{ backgroundImage: `url(${imageUrl})` }} />
       <div className="auction-body">
         <h3>{auction.title}</h3>
@@ -85,51 +71,13 @@ function AuctionCard({ auction, index, sectionKey, formatMoney }) {
             </div>
           </div>
         </div>
-        <div className="auction-bids">
-          <div>
-            <span>Lance inicial</span>
-            <strong>{auction.starting || formatMoney(auction.starting_price)}</strong>
-          </div>
-          <div>
-            <span>Lance atual</span>
-            <strong>{auction.current || auction.price || formatMoney(auction.current_bid)}</strong>
-            {auction.current_bidder_name && <small className="bidder-name">por {auction.current_bidder_name}</small>}
-          </div>
-          <div>
-            <span>Lance mínimo</span>
-            <strong>{auction.min || "R$ 300,00"}</strong>
-          </div>
-        </div>
       </div>
       <div className="auction-footer">
-        <Link className={`cta ${statusClass}`} to={getAuctionRoute(auction)}>
-          {statusLabel}
+        <Link className="cta open" to={getAuctionRoute(auction)}>
+          {getAuctionStatusLabel(auction)}
         </Link>
       </div>
     </article>
-  );
-}
-
-function Section({ title, description, items, sectionKey, formatMoney }) {
-  if (!items.length) return null;
-  return (
-    <>
-      <div className="section-title section-subtitle">
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
-      <div className="cards cards-highlight">
-        {items.map((auction, index) => (
-          <AuctionCard
-            key={`${sectionKey}-${auction.id || index}`}
-            auction={auction}
-            index={index}
-            sectionKey={sectionKey}
-            formatMoney={formatMoney}
-          />
-        ))}
-      </div>
-    </>
   );
 }
 
@@ -141,29 +89,27 @@ export default function AuctionGrid({ auctions = fallback }) {
     return `R$ ${num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
-  const leiloes = auctions.filter((auction) => String(auction?.listing_type || "lote").toLowerCase() === "leilao");
-  const lotes = auctions.filter((auction) => String(auction?.listing_type || "lote").toLowerCase() !== "leilao");
+  const openLots = auctions.filter(
+    (auction) =>
+      String(auction?.listing_type || "lote").toLowerCase() !== "leilao" &&
+      String(auction?.auction_status || auction?.status || "").toLowerCase() === "aberto"
+  );
 
   return (
     <section className="auction-grid">
       <div className="section-title">
-        <h2>Leilões em destaque</h2>
-        <p>Escolha categorias diferentes e acompanhe seus lances em tempo real.</p>
+        <h2>Lotes em destaque</h2>
+        <p>Aqui aparecem somente os lotes que já estão abertos para lance.</p>
       </div>
-      <Section
-        title="Leilões"
-        description="Pastas principais com lotes vinculados."
-        items={leiloes}
-        sectionKey="leiloes"
-        formatMoney={formatMoney}
-      />
-      <Section
-        title="Lotes"
-        description="Itens avulsos com lance direto."
-        items={lotes}
-        sectionKey="lotes"
-        formatMoney={formatMoney}
-      />
+      {openLots.length > 0 ? (
+        <div className="cards cards-highlight">
+          {openLots.map((auction, index) => (
+            <AuctionCard key={auction.id || index} auction={auction} index={index} formatMoney={formatMoney} />
+          ))}
+        </div>
+      ) : (
+        <div className="admin-empty-state">Nenhum lote aberto no momento.</div>
+      )}
     </section>
   );
 }

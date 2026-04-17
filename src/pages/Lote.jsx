@@ -290,16 +290,16 @@ export default function Lote() {
                 </div>
                 <div className="lot-header-stats">
                   <div>
-                    <span>Lotes</span>
+                    <span>Lotes dentro</span>
                     <strong>{childLots.length}</strong>
+                  </div>
+                  <div>
+                    <span>Endereço</span>
+                    <strong>{auction.location || "-"}</strong>
                   </div>
                   <div>
                     <span>Views</span>
                     <strong>{auction.views_count || 0}</strong>
-                  </div>
-                  <div>
-                    <span>Status</span>
-                    <strong>{formatStatusLabel(auction.auction_status)}</strong>
                   </div>
                 </div>
               </div>
@@ -319,59 +319,38 @@ export default function Lote() {
                     </div>
                     <div className="lot-info-body">
                       <div>
-                        <span>Inicio</span>
-                        <strong>{formatDateTimeBR(auction.starts_at)}</strong>
+                        <span>Endereço</span>
+                        <strong>{auction.location || "-"}</strong>
                       </div>
                       <div>
-                        <span>Termino</span>
-                        <strong>{formatDateTimeBR(auction.ends_at)}</strong>
+                        <span>Quantidade</span>
+                        <strong>{childLots.length} lotes</strong>
                       </div>
                       <div>
                         <span>Categoria</span>
                         <strong>{auction.category_name || "-"}</strong>
                       </div>
                       <div>
-                        <span>Localidade</span>
-                        <strong>{auction.location || "-"}</strong>
+                        <span>Status</span>
+                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
                       </div>
                     </div>
                   </section>
                 </div>
 
                 <aside className="lot-side" aria-label="Resumo do leilao">
-                  <div className={`lot-status ${isUpcoming ? "upcoming" : isOpen ? "open" : "closed"}`}>
-                    {isUpcoming ? "Em breve" : isOpen ? "Leilao aberto" : "Leilao encerrado"}
-                  </div>
-                  <div className="lot-time-card">
-                    <div className="lot-time-title">
-                      {isUpcoming ? "LEILAO ABRE EM" : isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}
-                    </div>
-                    {((isUpcoming && startsAt) || (isOpen && endsAt)) && countdown ? (
-                      <div className="lot-countdown" aria-label="Contador regressivo">
-                        <div className="lot-countdown-label">{isUpcoming ? "Tempo para abrir" : "Tempo restante"}</div>
-                        <div className="lot-countdown-grid">
-                          <div className="lot-countdown-unit">
-                            <strong>{countdown.days}</strong>
-                            <span>Dias</span>
-                          </div>
-                          <div className="lot-countdown-unit">
-                            <strong>{countdown.hours}</strong>
-                            <span>Horas</span>
-                          </div>
-                          <div className="lot-countdown-unit">
-                            <strong>{countdown.minutes}</strong>
-                            <span>Min</span>
-                          </div>
-                          <div className="lot-countdown-unit">
-                            <strong>{countdown.seconds}</strong>
-                            <span>Seg</span>
-                          </div>
-                        </div>
+                  <div className="lot-folder-summary">
+                    <div className="lot-time-title">PASTA DO LEILAO</div>
+                    <div className="lot-upcoming-note">Clique em um lote abaixo para abrir a tela de lance.</div>
+                    <div className="lot-folder-summary-grid">
+                      <div>
+                        <span>Endereço</span>
+                        <strong>{auction.location || "-"}</strong>
                       </div>
-                    ) : null}
-                    <div className="lot-time-meta">
-                      <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
-                      <strong>{formatDateTimeBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
+                      <div>
+                        <span>Lotes</span>
+                        <strong>{childLots.length}</strong>
+                      </div>
                     </div>
                   </div>
                 </aside>
