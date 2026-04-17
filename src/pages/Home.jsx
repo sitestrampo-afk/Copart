@@ -24,6 +24,22 @@ export default function Home() {
   if (documentState.residence?.status !== "aprovado") missingDocs.push("comprovante de residencia");
   const bidButtonLabel = canBid ? "Enviar lance" : "Documentos pendentes";
 
+  function mergeAuctions(prev, next) {
+    if (!Array.isArray(next) || next.length === 0) return prev;
+    const map = new Map();
+    for (const item of prev || []) {
+      if (item && item.id !== undefined && item.id !== null) {
+        map.set(item.id, item);
+      }
+    }
+    for (const item of next) {
+      if (item && item.id !== undefined && item.id !== null) {
+        map.set(item.id, item);
+      }
+    }
+    return Array.from(map.values());
+  }
+
   useEffect(() => {
     apiGet("/api/auctions")
       .then((data) => setAuctions(data.data || []))
@@ -34,7 +50,7 @@ export default function Home() {
       try {
         const payload = JSON.parse(event.data);
         if (payload.auctions) {
-          setAuctions(payload.auctions);
+          setAuctions((prev) => mergeAuctions(prev, payload.auctions));
         }
       } catch {
         // ignore
