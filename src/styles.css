@@ -2871,6 +2871,33 @@ h3,
     background: #123f6c;
 }
 
+.folder-card .auction-body {
+    padding-bottom: 6px;
+}
+
+.folder-meta {
+    grid-template-columns: 1fr;
+}
+
+.folder-meta div {
+    background: #f5f8fb;
+}
+
+.folder-footer {
+    padding-top: 6px;
+}
+
+.folder-cta {
+    background: #6d87d4;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.folder-cta:hover {
+    background: #5c77c7;
+}
+
 .lot-folder-summary {
     background: #fff;
     border-radius: 18px;

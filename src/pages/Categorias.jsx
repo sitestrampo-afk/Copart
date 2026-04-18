@@ -71,6 +71,10 @@ export default function Categorias() {
     return categories.filter((item) => String(item.name || "").toLowerCase().includes(needle));
   }, [categories, query]);
 
+  const leiloes = useMemo(
+    () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() === "leilao"),
+    [auctions]
+  );
   const lotes = useMemo(
     () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() !== "leilao"),
     [auctions]
@@ -92,6 +96,48 @@ export default function Categorias() {
           <div className="admin-alert admin-alert-info">
             Resultado da busca para <strong>{query}</strong>
           </div>
+        ) : null}
+
+        {leiloes.length > 0 ? (
+          <>
+            <div className="section-title section-subtitle">
+              <h3>Leilões</h3>
+              <p>Pastas do evento com seus lotes vinculados.</p>
+            </div>
+            <div className="cards cards-highlight">
+              {leiloes.map((auction, index) => (
+                <article key={auction.id} className="auction-card category-card folder-card">
+                  <Link to={getAuctionRoute(auction)} className="auction-image-link">
+                    <div
+                      className="auction-image"
+                      style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
+                    />
+                  </Link>
+                  <div className="auction-body">
+                    <h3>
+                      <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
+                    </h3>
+                    <p>Pasta do leilão {auction.location ? `| ${auction.location}` : ""}</p>
+                    <div className="auction-bids folder-meta">
+                      <div>
+                        <span>Endereço</span>
+                        <strong>{auction.location || "Endereço fixo"}</strong>
+                      </div>
+                      <div>
+                        <span>Lotes dentro</span>
+                        <strong>{auction.child_lots_count ?? 0}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="auction-footer folder-footer">
+                    <Link className="cta folder-cta" to={getAuctionRoute(auction)}>
+                      {`${auction.child_lots_count ?? 0} lotes disponíveis`}
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         ) : null}
 
         {lotes.length > 0 ? (
