@@ -290,7 +290,7 @@ export default function Lote() {
                 </div>
                 <div className="lot-header-stats">
                   <div>
-                    <span>Lotes dentro</span>
+                    <span>Lotes disponíveis</span>
                     <strong>{childLots.length}</strong>
                   </div>
                   <div>
@@ -324,7 +324,7 @@ export default function Lote() {
                       </div>
                       <div>
                         <span>Quantidade</span>
-                        <strong>{childLots.length} lotes</strong>
+                        <strong>{childLots.length} lotes disponíveis</strong>
                       </div>
                       <div>
                         <span>Categoria</span>
@@ -348,7 +348,7 @@ export default function Lote() {
                         <strong>{auction.location || "-"}</strong>
                       </div>
                       <div>
-                        <span>Lotes</span>
+                        <span>Lotes disponíveis</span>
                         <strong>{childLots.length}</strong>
                       </div>
                     </div>
