@@ -2619,8 +2619,8 @@ h3,
 
 .lot-grid {
     display: grid;
-    grid-template-columns: 1.25fr 0.9fr;
-    gap: 22px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(340px, 360px);
+    gap: 24px;
     align-items: start;
     min-width: 0;
 }
@@ -2727,6 +2727,7 @@ h3,
     position: sticky;
     top: 18px;
     min-width: 0;
+    width: 100%;
 }
 
 .lot-status {
@@ -2762,33 +2763,35 @@ h3,
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 16px 40px rgba(10, 25, 48, 0.10);
-    padding: 18px;
+    padding: 20px;
     min-width: 0;
 }
 
 .lot-bid-body h2 {
-    margin: 4px 0 14px;
+    margin: 4px 0 12px;
     font-family: "Playfair Display", serif;
 }
 
 .lot-quick {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .quick {
     display: flex;
     gap: 10px;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     padding: 12px 12px;
     border-radius: 14px;
     border: 1px solid #e7eef7;
     background: linear-gradient(180deg, #0b2f48, #0b2a40);
     color: #fff;
     cursor: pointer;
+    min-width: 0;
+    text-align: left;
 }
 
 .quick .plus {
@@ -3291,6 +3294,9 @@ h3,
 }
 
 @media (max-width: 1100px) {
+    .lot-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 330px);
+    }
     .lot-headline {
         flex-direction: column;
     }
@@ -3314,6 +3320,9 @@ h3,
     }
     .lot-note-grid {
         grid-template-columns: 1fr 1fr;
+    }
+    .lot-quick {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
