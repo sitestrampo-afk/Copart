@@ -50,7 +50,6 @@ export default function Categorias() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const category = searchParams.get("category") || "";
-  const [categories, setCategories] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,14 +60,10 @@ export default function Categorias() {
       setLoading(true);
       setError("");
       try {
-        const [categoryRes, auctionRes] = await Promise.all([
-          apiGet("/api/categories"),
-          apiGet(
-            `/api/auctions?type=all${query ? `&q=${encodeURIComponent(query)}` : ""}${category ? `&category=${encodeURIComponent(category)}` : ""}`
-          )
-        ]);
+        const auctionRes = await apiGet(
+          `/api/auctions?type=all${query ? `&q=${encodeURIComponent(query)}` : ""}${category ? `&category=${encodeURIComponent(category)}` : ""}`
+        );
         if (!active) return;
-        setCategories(Array.isArray(categoryRes.data) ? categoryRes.data : []);
         setAuctions(Array.isArray(auctionRes.data) ? auctionRes.data : []);
       } catch (err) {
         if (!active) return;
@@ -82,12 +77,6 @@ export default function Categorias() {
       active = false;
     };
   }, [query, category]);
-
-  const filteredCategories = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return categories;
-    return categories.filter((item) => String(item.name || "").toLowerCase().includes(needle));
-  }, [categories, query]);
 
   const lotes = useMemo(
     () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() !== "leilao"),
@@ -165,42 +154,6 @@ export default function Categorias() {
         ) : null}
 
         {!loading && auctions.length === 0 ? <div className="admin-empty-state">Nenhum resultado encontrado.</div> : null}
-
-        <div className="section-title" style={{ marginTop: 36 }}>
-          <h2>Categorias</h2>
-          <p>Use a grade abaixo como navegacao rapida para explorar a base.</p>
-        </div>
-
-        <div className="cards cards-highlight">
-          {filteredCategories.map((categoryItem) => (
-            <article key={categoryItem.id} className="auction-card category-card">
-              <div className="auction-image" style={{ backgroundImage: "none" }} />
-              <div className="auction-body">
-                <h3>{categoryItem.name}</h3>
-                <p>{categoryItem.total || ""} lotes ativos</p>
-                <div className="auction-bids">
-                  <div>
-                    <span>Oportunidades</span>
-                    <strong>Diversas opcoes</strong>
-                  </div>
-                  <div>
-                    <span>Seguranca</span>
-                    <strong>Leilao seguro</strong>
-                  </div>
-                  <div>
-                    <span>Transparencia</span>
-                    <strong>Regras claras</strong>
-                  </div>
-                </div>
-              </div>
-              <div className="auction-footer">
-                <Link className="cta" to={`/categorias?category=${encodeURIComponent(categoryItem.name)}`}>
-                  Ver lotes
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
       </main>
       <Footer />
     </div>
