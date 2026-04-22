@@ -361,7 +361,6 @@ export default function Lote() {
                 <aside className="lot-side" aria-label="Resumo do leilao">
                   <div className="lot-folder-summary">
                     <div className="lot-time-title">PASTA DO LEILAO</div>
-                    <div className="lot-upcoming-note">Clique em um lote abaixo para abrir a tela de lance.</div>
                     <div className="lot-folder-summary-grid">
                       <div>
                         <span>Endereço</span>
@@ -379,7 +378,6 @@ export default function Lote() {
               <section className="lot-folder-section">
                 <div className="lot-panel-head">
                   <h3>Lotes desta pasta</h3>
-                  <p>Clique em um lote para abrir a tela de lance.</p>
                 </div>
                 {childLots.length > 0 ? (
                   <div className="lot-folder-grid">

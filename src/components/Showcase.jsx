@@ -33,7 +33,7 @@
           </article>
           <article className="showcase-card">
             <div className="showcase-card-media showcase-media-2">
-              <h4>Automóveis</h4>
+              <h4>Veiculos Recuperados de Financiamentos</h4>
               <span>Confira</span>
             </div>
             <div className="showcase-links two-col">

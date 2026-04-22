@@ -39,7 +39,6 @@ export default function AuctionGrid({ auctions = [] }) {
     <section className="auction-grid">
       <div className="section-title">
         <h2>Pastas dos eventos</h2>
-        <p>Os leiloes aparecem aqui. Abra uma pasta para ver os lotes vinculados.</p>
       </div>
       <div className="cards cards-highlight">
         {eventFolders.map((auction) => {
