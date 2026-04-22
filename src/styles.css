@@ -69,6 +69,20 @@ button {
     color: var(--light);
 }
 
+.brand-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.brand-logo {
+    display: block;
+    width: 180px;
+    max-width: 100%;
+    height: auto;
+}
+
 .brand-mark {
     font-size: 1.6rem;
     font-weight: 700;
@@ -929,6 +943,9 @@ h3,
         align-items: center;
         text-align: center;
     }
+    .brand-logo {
+        width: 140px;
+    }
     .nav-actions .ghost,
     .nav-actions .cta {
         width: 100%;
@@ -985,6 +1002,11 @@ h3,
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+}
+
+.brand-logo-mobile {
+    width: 132px;
 }
 
 .mobile-search {
@@ -1046,6 +1068,9 @@ h3,
     }
     .brand {
         align-items: flex-start;
+    }
+    .brand-logo {
+        width: 160px;
     }
     .mobile-menu {
         display: inline-flex;

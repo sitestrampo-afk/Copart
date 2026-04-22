@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import logo from "../assets/img/transferir.svg";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -31,10 +32,9 @@ export default function Navbar() {
         <span>Contato</span>
       </div>
       <div className="nav-main">
-        <div className="brand">
-          <div className="brand-mark">Leilão Copart</div>
-          <div className="brand-sub">Leilões Oficiais</div>
-        </div>
+        <Link to="/" className="brand brand-link" aria-label="Leilao Copart">
+          <img className="brand-logo" src={logo} alt="Leilao Copart" />
+        </Link>
         <form className="search" onSubmit={handleSearch}>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar lotes e leiloes..." />
           <button aria-label="buscar" type="submit">
@@ -43,7 +43,7 @@ export default function Navbar() {
         </form>
         <div className="nav-actions">
           <Link to="/" className="ghost">
-            <i className="fa-solid fa-house" /> Início
+            <i className="fa-solid fa-house" /> Inicio
           </Link>
           {userToken ? (
             <>
@@ -74,22 +74,22 @@ export default function Navbar() {
       </div>
       <div className="nav-categories">
         <Link to="/">
-          <i className="fa-solid fa-house" /> Início
+          <i className="fa-solid fa-house" /> Inicio
         </Link>
         <Link to="/categorias?q=Carros">
           <i className="fa-solid fa-car" /> Carros
         </Link>
         <Link to="/categorias?q=Caminhoes">
-          <i className="fa-solid fa-truck" /> Caminhões
+          <i className="fa-solid fa-truck" /> Caminhoes
         </Link>
         <Link to="/categorias?q=Motos">
           <i className="fa-solid fa-motorcycle" /> Motos
         </Link>
         <Link to="/categorias?q=Utilitarios">
-          <i className="fa-solid fa-van-shuttle" /> Utilitários
+          <i className="fa-solid fa-van-shuttle" /> Utilitarios
         </Link>
         <Link to="/categorias?q=Imoveis">
-          <i className="fa-solid fa-building" /> Imóveis
+          <i className="fa-solid fa-building" /> Imoveis
         </Link>
       </div>
       <div className="nav-info">
@@ -103,10 +103,9 @@ export default function Navbar() {
 
       <div className={`mobile-drawer ${open ? "open" : ""}`}>
         <div className="mobile-header">
-          <div className="brand">
-            <div className="brand-mark">Leilão Copart</div>
-            <div className="brand-sub">Leilões Oficiais</div>
-          </div>
+          <Link to="/" className="brand brand-link" aria-label="Leilao Copart" onClick={() => setOpen(false)}>
+            <img className="brand-logo brand-logo-mobile" src={logo} alt="Leilao Copart" />
+          </Link>
           <button className="ghost" onClick={() => setOpen(false)} aria-label="Fechar menu">
             <i className="fa-solid fa-xmark" />
           </button>
@@ -143,22 +142,22 @@ export default function Navbar() {
         </div>
         <div className="mobile-links">
           <Link to="/" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-house" /> Início
+            <i className="fa-solid fa-house" /> Inicio
           </Link>
           <Link to="/categorias?q=Carros" onClick={() => setOpen(false)}>
             <i className="fa-solid fa-car" /> Carros
           </Link>
           <Link to="/categorias?q=Caminhoes" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-truck" /> Caminhões
+            <i className="fa-solid fa-truck" /> Caminhoes
           </Link>
           <Link to="/categorias?q=Motos" onClick={() => setOpen(false)}>
             <i className="fa-solid fa-motorcycle" /> Motos
           </Link>
           <Link to="/categorias?q=Utilitarios" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-van-shuttle" /> Utilitários
+            <i className="fa-solid fa-van-shuttle" /> Utilitarios
           </Link>
           <Link to="/categorias?q=Imoveis" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-building" /> Imóveis
+            <i className="fa-solid fa-building" /> Imoveis
           </Link>
         </div>
       </div>
