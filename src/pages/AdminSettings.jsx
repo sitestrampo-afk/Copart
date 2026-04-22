@@ -48,7 +48,10 @@ function buildRulePayload(form) {
     target_type: form.target_type,
     auction_id: Number(form.auction_id || 0),
     user_scope: form.user_scope,
-    user_id: form.user_scope === "all" ? null : Number(form.user_id || 0),
+    user_id:
+      form.user_scope === "all" || (form.user_scope === "bots" && !form.user_id)
+        ? null
+        : Number(form.user_id || 0),
     bid_increment: Number(form.bid_increment || 0),
     max_amount: form.max_amount,
     max_steps: Number(form.max_steps || 1),
@@ -97,6 +100,8 @@ export default function AdminSettings() {
   const [editingRuleId, setEditingRuleId] = useState(null);
   const [demoForm, setDemoForm] = useState({ base_name: "Usuario Demo", quantity: 1 });
   const [demoCreated, setDemoCreated] = useState([]);
+  const [botForm, setBotForm] = useState({ base_name: "Bot Fantasma", bot_label: "Bot Fantasma", quantity: 1 });
+  const [botCreated, setBotCreated] = useState([]);
 
   const targetAuctions = useMemo(
     () => auctions.filter((auction) => normalizeListingType(auction.listing_type) === automationForm.target_type),
@@ -111,7 +116,11 @@ export default function AdminSettings() {
     [rules, selectedRuleId]
   );
   const eligibleUsers = useMemo(
-    () => users.filter((user) => user.approved_at && user.email_verified_at),
+    () => users.filter((user) => user.approved_at && user.email_verified_at && !Number(user.is_bot)),
+    [users]
+  );
+  const eligibleBots = useMemo(
+    () => users.filter((user) => user.approved_at && user.email_verified_at && Number(user.is_bot)),
     [users]
   );
   const selectedAdminAuction = useMemo(
@@ -328,7 +337,8 @@ export default function AdminSettings() {
       const payload = buildRulePayload(automationForm);
       if (!payload.name) throw new Error("Nome obrigatorio");
       if (!payload.auction_id) throw new Error("Selecione um alvo");
-      if (payload.user_scope !== "all" && !payload.user_id) throw new Error("Selecione um usuario");
+      if (payload.user_scope === "individual" && !payload.user_id) throw new Error("Selecione um usuario");
+      if (payload.user_scope === "bots" && payload.user_id !== null && !payload.user_id) throw new Error("Selecione um bot valido ou deixe em branco");
       if (editingRuleId) {
         await apiPutAuth(`/api/admin/bid-automations/${editingRuleId}`, payload, token);
         setMessage("Regra atualizada.");
@@ -412,6 +422,34 @@ export default function AdminSettings() {
       await refreshLogs();
     } catch (err) {
       setError(err.message || "Erro ao criar usuario");
+    }
+  }
+
+  async function handleCreateBots(e) {
+    if (e?.preventDefault) e.preventDefault();
+    setError("");
+    setMessage("");
+    setOpsError("");
+    setOpsMessage("");
+    setBotCreated([]);
+    try {
+      const res = await apiPostAuth(
+        "/api/admin/users/bots",
+        {
+          base_name: botForm.base_name,
+          bot_label: botForm.bot_label,
+          quantity: Number(botForm.quantity || 1)
+        },
+        token
+      );
+      const created = Array.isArray(res.data) ? res.data : [];
+      setBotCreated(created);
+      const usersRes = await apiGetAuth("/api/admin/users", token);
+      setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+      setMessage(created.length === 1 ? "Bot criado." : "Bots criados.");
+      await refreshLogs();
+    } catch (err) {
+      setError(err.message || "Erro ao criar bot");
     }
   }
 
@@ -512,7 +550,15 @@ export default function AdminSettings() {
           </div>
           <div className="kv">
             <div className="k">Usuarios</div>
-            <div className="v">{selectedRule.user_scope === "all" ? "Todos os usuarios" : selectedRule.user_name || "-"}</div>
+            <div className="v">
+              {selectedRule.user_scope === "all"
+                ? "Todos os usuarios humanos"
+                : selectedRule.user_scope === "bots"
+                ? selectedRule.user_bot_label || selectedRule.user_name
+                  ? `Bot fantasma: ${selectedRule.user_bot_label || selectedRule.user_name}`
+                  : "Bots fantasma"
+                : selectedRule.user_name || "-"}
+            </div>
           </div>
           <div className="kv">
             <div className="k">Status</div>
@@ -567,7 +613,7 @@ export default function AdminSettings() {
         <div className="settings-tabs" role="tablist" aria-label="Configuracoes do admin">
           {[
             { key: "automation", label: "Automacao" },
-            { key: "users", label: "Usuarios de teste" },
+            { key: "users", label: "Usuarios" },
             { key: "operations", label: "Operacoes" },
             { key: "environment", label: "Ambiente" },
             { key: "logs", label: "Logs" }
@@ -656,14 +702,15 @@ export default function AdminSettings() {
                         setAutomationForm((current) => ({
                           ...current,
                           user_scope: e.target.value,
-                          user_id: e.target.value === "all" ? "" : current.user_id
+                          user_id: e.target.value === "all" || e.target.value === "bots" ? "" : current.user_id
                         }))
                       }
                     >
                       <option value="individual">Usuario individual</option>
                       <option value="all">Todos os usuarios</option>
+                      <option value="bots">Bots fantasma</option>
                     </select>
-                    <small>Escolha um usuario especifico ou aplique a regra para toda a base aprovada.</small>
+                    <small>Escolha um usuario humano, toda a base humana ou os bots fantasma criados pelo sistema.</small>
                   </label>
 
                   {automationForm.user_scope === "individual" ? (
@@ -683,9 +730,25 @@ export default function AdminSettings() {
                       </select>
                       <small>Somente usuarios aprovados e verificados entram na regra.</small>
                     </label>
+                  ) : automationForm.user_scope === "bots" ? (
+                    <label className="field">
+                      <span>Bot fantasma</span>
+                      <select
+                        value={automationForm.user_id}
+                        onChange={(e) => setAutomationForm((current) => ({ ...current, user_id: e.target.value }))}
+                      >
+                        <option value="">Todos os bots fantasma</option>
+                        {eligibleBots.map((bot) => (
+                          <option key={bot.id} value={bot.id}>
+                            [{bot.id}] {bot.bot_label || bot.name} - {bot.email}
+                          </option>
+                        ))}
+                      </select>
+                      <small>Deixe vazio para usar todos os bots aprovados e verificados.</small>
+                    </label>
                   ) : (
                     <div className="admin-alert admin-alert-info">
-                      A regra sera aplicada para todos os usuarios aprovados e verificados no banco.
+                      A regra sera aplicada para todos os usuarios humanos aprovados e verificados no banco.
                     </div>
                   )}
 
@@ -813,8 +876,20 @@ export default function AdminSettings() {
                           {normalizeListingType(rule.target_type) === "leilao" ? "Leilao" : "Lote"} - {rule.auction_title}
                         </span>
                         <span>
-                          {rule.user_scope === "all" ? "Todos os usuarios" : rule.user_name || "-"}
-                          <div className="muted">{rule.user_scope === "all" ? "Base aprovada e verificada" : rule.user_email}</div>
+                          {rule.user_scope === "all"
+                            ? "Todos os usuarios humanos"
+                            : rule.user_scope === "bots"
+                            ? rule.user_bot_label || rule.user_name
+                              ? `Bot fantasma: ${rule.user_bot_label || rule.user_name}`
+                              : "Bots fantasma"
+                            : rule.user_name || "-"}
+                          <div className="muted">
+                            {rule.user_scope === "all"
+                              ? "Base humana aprovada e verificada"
+                              : rule.user_scope === "bots"
+                              ? "Base de bots aprovados e verificados"
+                              : rule.user_email}
+                          </div>
                         </span>
                         <span>
                           {formatMoney(rule.bid_increment)}
@@ -854,9 +929,75 @@ export default function AdminSettings() {
         {activeTab === "users" && (
           <div className="settings-stack">
             <div className="settings-section">
-              <h3>Usuarios de teste</h3>
+              <h3>Bots fantasma</h3>
               <p className="admin-muted">
-                Cria usuarios aprovados no banco com documentos de teste ja liberados para uso nas regras automaticas.
+                Cria contas aprovadas e verificadas que o motor de automacao usa como autores reais dos lances.
+              </p>
+
+              <form className="settings-form" onSubmit={handleCreateBots}>
+                <div className="settings-grid-2">
+                  <label className="field">
+                    <span>Nome base do bot</span>
+                    <input
+                      value={botForm.base_name}
+                      onChange={(e) => setBotForm((current) => ({ ...current, base_name: e.target.value }))}
+                      placeholder="Bot Fantasma"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Etiqueta do bot</span>
+                    <input
+                      value={botForm.bot_label}
+                      onChange={(e) => setBotForm((current) => ({ ...current, bot_label: e.target.value }))}
+                      placeholder="Bot Fantasma"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Quantidade</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={botForm.quantity}
+                      onChange={(e) => setBotForm((current) => ({ ...current, quantity: e.target.value }))}
+                    />
+                  </label>
+                </div>
+
+                <div className="settings-actions">
+                  <button className="admin-btn admin-btn-primary" type="submit" disabled={loading}>
+                    Criar bots fantasma
+                  </button>
+                </div>
+              </form>
+
+              {botCreated.length > 0 && (
+                <div className="admin-alert admin-alert-ok" style={{ marginTop: 16 }}>
+                  <strong>Credenciais dos bots:</strong>
+                  <div className="table" style={{ marginTop: 12 }}>
+                    <div>
+                      <span>Nome</span>
+                      <span>Email</span>
+                      <span>Usuario</span>
+                      <span>Senha</span>
+                    </div>
+                    {botCreated.map((item) => (
+                      <div key={item.id}>
+                        <span>{item.name}</span>
+                        <span>{item.email}</span>
+                        <span>{item.username}</span>
+                        <span>{item.password}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="settings-section">
+              <h3>Usuarios de teste humanos</h3>
+              <p className="admin-muted">
+                Se voce ainda quiser usuarios normais para simular cadastro e documentos, pode manter essa criacao separada.
               </p>
 
               <form className="settings-form" onSubmit={handleCreateDemoUsers}>

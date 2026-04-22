@@ -114,6 +114,7 @@ export default function AdminUsers() {
         <div className="table">
           <div>
             <span>ID</span>
+            <span>Tipo</span>
             <span>Nome</span>
             <span>Email</span>
             <span>Status</span>
@@ -123,6 +124,7 @@ export default function AdminUsers() {
           {users.map((user) => (
             <div key={user.id} className="admin-user-row">
               <span>{user.id}</span>
+              <span>{Number(user.is_bot) ? "Bot" : "Humano"}</span>
               <span>{user.name}</span>
               <span>{user.email}</span>
               <span>
@@ -196,6 +198,7 @@ export default function AdminUsers() {
                     <div><span>Usuario</span><strong>{openUser.username || "-"}</strong></div>
                     <div><span>Email</span><strong>{openUser.email}</strong></div>
                     <div><span>Tipo</span><strong>{openUser.type === "pj" ? "Pessoa Juridica" : "Pessoa Fisica"}</strong></div>
+                    <div><span>Perfil</span><strong>{Number(openUser.is_bot) ? "Fantasma" : "Humano"}</strong></div>
                     <div><span>CPF</span><strong>{openUser.cpf || "-"}</strong></div>
                     <div><span>CNPJ</span><strong>{openUser.cnpj || "-"}</strong></div>
                     <div><span>RG</span><strong>{openUser.rg || "-"}</strong></div>
@@ -216,6 +219,7 @@ export default function AdminUsers() {
                     <div><span>Documento principal</span><strong>{formatDocumentStatus(openUser.document_status)}</strong></div>
                     <div><span>Comprovante</span><strong>{formatDocumentStatus(openUser.residence_status)}</strong></div>
                     <div><span>Conta</span><strong>{openUser.approved_at ? "Aprovado" : "Pendente"}</strong></div>
+                    <div><span>Bot</span><strong>{Number(openUser.is_bot) ? "Sim" : "Nao"}</strong></div>
                     <div><span>Cadastro</span><strong>{openUser.created_at ? new Date(openUser.created_at).toLocaleDateString("pt-BR") : "-"}</strong></div>
                     <div><span>Ultima atividade</span><strong>{openUser.last_seen ? new Date(openUser.last_seen).toLocaleString("pt-BR") : "-"}</strong></div>
                   </div>
