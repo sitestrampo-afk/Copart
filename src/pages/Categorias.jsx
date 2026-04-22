@@ -3,8 +3,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import { apiGet } from "../services/api.js";
-import banner1 from "../assets/img/banner_30_cadastre-se_favaretooficialleiloes.com_zze31e4b355d.jpg";
-import banner2 from "../assets/img/banner_31_cadastre-se_favaretooficialleiloes.com_zz75fd32897a.jpg";
 
 function formatMoney(value) {
   const num = Number(value);
@@ -18,6 +16,26 @@ function formatAuctionType(auction) {
 
 function getAuctionRoute(auction) {
   return auction.listing_type === "leilao" ? `/leilao/${auction.id}` : `/lote/${auction.id}`;
+}
+
+function getAuctionImage(auction) {
+  if (auction?.image_url) return auction.image_url;
+  if (Array.isArray(auction?.images) && auction.images.length > 0) {
+    const first = auction.images.find((item) => typeof item === "string" && item.trim());
+    if (first) return first;
+  }
+  if (typeof auction?.images_json === "string" && auction.images_json.trim()) {
+    try {
+      const parsed = JSON.parse(auction.images_json);
+      if (Array.isArray(parsed)) {
+        const first = parsed.find((item) => typeof item === "string" && item.trim());
+        if (first) return first;
+      }
+    } catch {
+      // ignore malformed payloads
+    }
+  }
+  return "";
 }
 
 function formatStatusLabel(status) {
@@ -71,10 +89,6 @@ export default function Categorias() {
     return categories.filter((item) => String(item.name || "").toLowerCase().includes(needle));
   }, [categories, query]);
 
-  const leiloes = useMemo(
-    () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() === "leilao"),
-    [auctions]
-  );
   const lotes = useMemo(
     () => auctions.filter((auction) => String(auction.listing_type || "lote").toLowerCase() !== "leilao"),
     [auctions]
@@ -98,113 +112,69 @@ export default function Categorias() {
           </div>
         ) : null}
 
-        {leiloes.length > 0 ? (
-          <>
-            <div className="section-title section-subtitle">
-              <h3>Leilões</h3>
-              <p>Pastas do evento com seus lotes vinculados.</p>
-            </div>
-            <div className="cards cards-highlight">
-              {leiloes.map((auction, index) => (
-                <article key={auction.id} className="auction-card category-card folder-card">
-                  <Link to={getAuctionRoute(auction)} className="auction-image-link">
-                    <div
-                      className="auction-image"
-                      style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
-                    />
-                  </Link>
-                  <div className="auction-body">
-                    <h3>
-                      <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
-                    </h3>
-                    <p>Pasta do leilão {auction.location ? `| ${auction.location}` : ""}</p>
-                    <div className="auction-bids folder-meta">
-                      <div>
-                        <span>Endereço</span>
-                        <strong>{auction.location || "Endereço fixo"}</strong>
-                      </div>
-                      <div>
-                        <span>Lotes dentro</span>
-                        <strong>{auction.child_lots_count ?? 0}</strong>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="auction-footer folder-footer">
-                    <Link className="cta folder-cta" to={getAuctionRoute(auction)}>
-                      {`${auction.child_lots_count ?? 0} lotes disponíveis`}
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
-        ) : null}
-
         {lotes.length > 0 ? (
           <>
             <div className="section-title section-subtitle">
-              <h3>Lotes da categoria</h3>
-              <p>Aqui aparecem os lotes relacionados, abertos e futuros.</p>
+              <h3>Lotes</h3>
+              <p>Somente os lotes correspondentes aparecem aqui.</p>
             </div>
             <div className="cards cards-highlight">
-              {lotes.map((auction, index) => (
-                <article key={auction.id} className="auction-card category-card">
-                  <Link to={getAuctionRoute(auction)} className="auction-image-link">
-                    <div
-                      className="auction-image"
-                      style={{ backgroundImage: `url(${auction.image_url || (index % 2 ? banner2 : banner1)})` }}
-                    />
-                  </Link>
-                  <div className="auction-body">
-                    <h3>
-                      <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
-                    </h3>
-                    <p>
-                      {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
-                      {auction.location ? `| ${auction.location}` : ""}
-                    </p>
-                    <div className="auction-bids">
-                      <div>
-                        <span>Lance atual</span>
-                        <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
-                      </div>
-                      <div>
-                        <span>Status</span>
-                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
-                      </div>
-                      <div>
-                        <span>Categoria</span>
-                        <strong>{auction.category_name || "-"}</strong>
+              {lotes.map((auction) => {
+                const imageUrl = getAuctionImage(auction);
+                return (
+                  <article key={auction.id} className="auction-card category-card">
+                    <Link to={getAuctionRoute(auction)} className="auction-image-link">
+                      <div
+                        className="auction-image"
+                        style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : "none" }}
+                      />
+                    </Link>
+                    <div className="auction-body">
+                      <h3>
+                        <Link to={getAuctionRoute(auction)}>{auction.title}</Link>
+                      </h3>
+                      <p>
+                        {formatAuctionType(auction)} {auction.lot_number ? `| Lote ${auction.lot_number}` : ""}{" "}
+                        {auction.location ? `| ${auction.location}` : ""}
+                      </p>
+                      <div className="auction-bids">
+                        <div>
+                          <span>Lance atual</span>
+                          <strong>{formatMoney(auction.current_bid || auction.starting_price)}</strong>
+                        </div>
+                        <div>
+                          <span>Status</span>
+                          <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                        </div>
+                        <div>
+                          <span>Categoria</span>
+                          <strong>{auction.category_name || "-"}</strong>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="auction-footer">
-                    <Link className="cta" to={getAuctionRoute(auction)}>
-                      {String(auction.auction_status || "").toLowerCase() === "agendado" ? "Em breve" : "Ver lote"}
-                    </Link>
-                  </div>
-                </article>
-              ))}
+                    <div className="auction-footer">
+                      <Link className="cta" to={getAuctionRoute(auction)}>
+                        {String(auction.auction_status || "").toLowerCase() === "agendado" ? "Em breve" : "Ver lote"}
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </>
         ) : null}
 
-        {!loading && auctions.length === 0 ? (
-          <div className="admin-empty-state">Nenhum resultado encontrado.</div>
-        ) : null}
+        {!loading && auctions.length === 0 ? <div className="admin-empty-state">Nenhum resultado encontrado.</div> : null}
 
         <div className="section-title" style={{ marginTop: 36 }}>
           <h2>Categorias</h2>
-          <p>Use a grade abaixo como navegação rapida para explorar a base.</p>
+          <p>Use a grade abaixo como navegacao rapida para explorar a base.</p>
         </div>
 
         <div className="cards cards-highlight">
-          {filteredCategories.map((categoryItem, index) => (
+          {filteredCategories.map((categoryItem) => (
             <article key={categoryItem.id} className="auction-card category-card">
-              <div
-                className="auction-image"
-                style={{ backgroundImage: `url(${index % 2 ? banner2 : banner1})` }}
-              />
+              <div className="auction-image" style={{ backgroundImage: "none" }} />
               <div className="auction-body">
                 <h3>{categoryItem.name}</h3>
                 <p>{categoryItem.total || ""} lotes ativos</p>

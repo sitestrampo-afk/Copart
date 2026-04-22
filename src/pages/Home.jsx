@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar.jsx";
 import Hero from "../components/Hero.jsx";
 import AuctionGrid from "../components/AuctionGrid.jsx";
@@ -122,7 +122,7 @@ export default function Home() {
     <div>
       <Navbar />
       <Hero />
-      <AuctionGrid auctions={auctions.length ? auctions : undefined} onBid={setSelected} />
+      <AuctionGrid auctions={auctions} />
       <ValueProps />
       <Showcase />
       <Partners />
@@ -144,7 +144,9 @@ export default function Home() {
               <button className="cta" type="submit" disabled={!canBid}>
                 {bidButtonLabel}
               </button>
-              <button className="ghost" type="button" onClick={() => setSelected(null)}>Cancelar</button>
+              <button className="ghost" type="button" onClick={() => setSelected(null)}>
+                Cancelar
+              </button>
             </form>
             {!canBid && (
               <div className="alert warning">

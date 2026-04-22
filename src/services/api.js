@@ -5,12 +5,12 @@ function normalizeBaseUrl(value) {
   const trimmed = String(value || "").trim().replace(/\/+$/, "");
   if (!trimmed) return DEFAULT_PROD_API_URL;
   if (/copartatendimento\.com/i.test(trimmed)) return DEFAULT_PROD_API_URL;
-  if (/localhost\/Favareto\/Backend\/public/i.test(trimmed)) return DEFAULT_PROD_API_URL;
+  if (/localhost\/Copart\/Backend\/public/i.test(trimmed)) return DEFAULT_PROD_API_URL;
   return trimmed;
 }
 
 export const apiBaseUrl = normalizeBaseUrl(
-  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Favareto/Backend/public/index.php")
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Copart/Backend/public/index.php")
 );
 
 export function buildApiUrl(path) {
