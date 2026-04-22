@@ -75,6 +75,25 @@ function formatStatusLabel(status) {
   return status || "-";
 }
 
+function buildDescriptionItems(description) {
+  const raw = String(description || "").trim();
+  if (!raw) return [];
+
+  const lines = raw
+    .split(/\r?\n+/)
+    .map((line) => line.trim().replace(/^[•\-\*]+\s*/, ""))
+    .filter(Boolean);
+
+  if (lines.length > 1) return lines;
+
+  const sentenceParts = raw
+    .split(/(?:\s+[•\-\*]\s+|;\s*|\.\s+)/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return sentenceParts.length > 1 ? sentenceParts : [raw];
+}
+
 export default function Lote() {
   const { id } = useParams();
   const location = useLocation();
@@ -180,6 +199,7 @@ export default function Lote() {
   const countdownTarget = isUpcoming ? startsAt : endsAt;
   const timeLeftMs = countdownTarget ? countdownTarget.getTime() - now : null;
   const countdown = countdownTarget && timeLeftMs !== null ? formatCountdown(timeLeftMs) : null;
+  const descriptionItems = useMemo(() => buildDescriptionItems(auction?.description), [auction?.description]);
 
   useEffect(() => {
     // Keep countdown ticking while the page is open.
@@ -630,7 +650,14 @@ export default function Lote() {
                     <div className="lot-panel-head">
                       <h3>Descricao</h3>
                     </div>
-                    <p>{auction.description}</p>
+                    <ul className="lot-description-list">
+                      {descriptionItems.map((item, index) => (
+                        <li key={`${index}-${item}`}>
+                          <span className="lot-description-dot" aria-hidden="true" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </section>
                 )}
 
