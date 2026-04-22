@@ -29,7 +29,7 @@ function createAutomationForm(defaultAuctionId = "") {
     name: "",
     target_type: "lote",
     auction_id: defaultAuctionId,
-    user_scope: "individual",
+    user_scope: "bots",
     user_id: "",
     bid_increment: "50",
     max_amount: "",
