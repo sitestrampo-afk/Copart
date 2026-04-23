@@ -45,6 +45,7 @@ export default function Perfil() {
   const [form, setForm] = useState(emptyProfile);
   const [primaryDocument, setPrimaryDocument] = useState(null);
   const [residenceDocument, setResidenceDocument] = useState(null);
+  const [manualBidAccess, setManualBidAccess] = useState(false);
   const [history, setHistory] = useState([]);
   const [docType, setDocType] = useState("RG");
   const [docFront, setDocFront] = useState(null);
@@ -88,6 +89,7 @@ export default function Perfil() {
         if (!active) return;
         setPrimaryDocument(docs.data?.primary || null);
         setResidenceDocument(docs.data?.residence || null);
+        setManualBidAccess(Boolean(docs.data?.bid_access_override_at));
 
         const hist = await apiGetAuth("/api/user/documents/history", token);
         if (!active) return;
@@ -120,6 +122,7 @@ export default function Perfil() {
     const docs = await apiGetAuth("/api/user/documents", token);
     setPrimaryDocument(docs.data?.primary || null);
     setResidenceDocument(docs.data?.residence || null);
+    setManualBidAccess(Boolean(docs.data?.bid_access_override_at));
     const hist = await apiGetAuth("/api/user/documents/history", token);
     setHistory(hist.data || []);
   }
@@ -304,6 +307,12 @@ export default function Perfil() {
                   <h2>Documentos</h2>
                   <p>Envie seus arquivos para liberar a conta de lances.</p>
                 </header>
+
+                {manualBidAccess && (
+                  <div className="doc-locked-note success-box">
+                    Sua conta foi liberada manualmente pelo admin para participar dos lances.
+                  </div>
+                )}
 
                 <div className="document-sections">
                   <div className="document-panel">

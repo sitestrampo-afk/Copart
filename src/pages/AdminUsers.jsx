@@ -10,6 +10,12 @@ function formatDocumentStatus(status) {
   return "Sem envio";
 }
 
+function formatBidAccess(user) {
+  if (user?.bid_access_override_at) return "Liberado manualmente";
+  if (user?.approved_at && user?.email_verified_at) return "Liberado automaticamente";
+  return "Bloqueado";
+}
+
 function formatDocumentLabel(type) {
   if (type === "RESIDENCIA") return "Comprovante de residencia";
   if (type === "CNH") return "Carteira de motorista";
@@ -52,6 +58,20 @@ export default function AdminUsers() {
       const token = localStorage.getItem("adminToken");
       await apiPostAuth(`/api/admin/users/${id}/approve`, {}, token);
       loadUsers();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function manualApproveUser(id) {
+    try {
+      const token = localStorage.getItem("adminToken");
+      await apiPostAuth(`/api/admin/users/${id}/manual-approve`, {}, token);
+      loadUsers();
+      if (openProfile === id) {
+        await loadDocuments(id);
+        await loadActivity(id);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -129,9 +149,15 @@ export default function AdminUsers() {
               <span>{user.email}</span>
               <span>
                 {user.approved_at ? (
-                  "Aprovado"
+                  <div className="admin-user-actions">
+                    <span className="admin-badge admin-badge-ok">Aprovado</span>
+                    <button className="ghost" onClick={() => manualApproveUser(user.id)}>Liberar lances</button>
+                  </div>
                 ) : (
-                  <button className="ghost" onClick={() => approveUser(user.id)}>Aprovar</button>
+                  <div className="admin-user-actions">
+                    <button className="ghost" onClick={() => approveUser(user.id)}>Aprovar conta</button>
+                    <button className="ghost" onClick={() => manualApproveUser(user.id)}>Liberar lances</button>
+                  </div>
                 )}
               </span>
               <span>
@@ -219,6 +245,7 @@ export default function AdminUsers() {
                     <div><span>Documento principal</span><strong>{formatDocumentStatus(openUser.document_status)}</strong></div>
                     <div><span>Comprovante</span><strong>{formatDocumentStatus(openUser.residence_status)}</strong></div>
                     <div><span>Conta</span><strong>{openUser.approved_at ? "Aprovado" : "Pendente"}</strong></div>
+                    <div><span>Lances</span><strong>{formatBidAccess(openUser)}</strong></div>
                     <div><span>Bot</span><strong>{Number(openUser.is_bot) ? "Sim" : "Nao"}</strong></div>
                     <div><span>Cadastro</span><strong>{openUser.created_at ? new Date(openUser.created_at).toLocaleDateString("pt-BR") : "-"}</strong></div>
                     <div><span>Ultima atividade</span><strong>{openUser.last_seen ? new Date(openUser.last_seen).toLocaleString("pt-BR") : "-"}</strong></div>
@@ -313,6 +340,15 @@ export default function AdminUsers() {
                     </div>
                   );
                 })}
+
+                <div className="admin-user-release">
+                  <button className="cta" onClick={() => manualApproveUser(openUser.id)}>
+                    Liberar lances manualmente
+                  </button>
+                  <p className="muted">
+                    Use este botao quando o cliente enviar documentos por WhatsApp e voce quiser habilitar sem depender do envio no site.
+                  </p>
+                </div>
               </div>
 
               <div className="admin-activity">

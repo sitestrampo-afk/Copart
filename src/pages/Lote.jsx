@@ -103,7 +103,7 @@ export default function Lote() {
   const [auction, setAuction] = useState(null);
   const [mainImage, setMainImage] = useState("");
   const [amount, setAmount] = useState("");
-  const [documentState, setDocumentState] = useState({ primary: null, residence: null });
+  const [documentState, setDocumentState] = useState({ primary: null, residence: null, bid_access_override_at: null });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -139,7 +139,8 @@ export default function Lote() {
             if (!active) return;
             setDocumentState({
               primary: doc.data?.primary || null,
-              residence: doc.data?.residence || null
+              residence: doc.data?.residence || null,
+              bid_access_override_at: doc.data?.bid_access_override_at || null
             });
           } catch {
             // ignore profile doc issues here
@@ -180,16 +181,17 @@ export default function Lote() {
   const isUpcoming = isPublished && startsAt && startsAt.getTime() > now;
   const isOpen = isPublished && !isUpcoming && (!endsAt || endsAt.getTime() > now) && isStarted;
   const isLeilaoFolder = String(location.pathname || "").startsWith("/leilao/") || String(auction?.listing_type || "").toLowerCase() === "leilao";
+  const hasManualAccess = !!documentState.bid_access_override_at;
   const primaryStatus = documentState.primary?.status || null;
   const residenceStatus = documentState.residence?.status || null;
-  const canBid = !!token && primaryStatus === "aprovado" && residenceStatus === "aprovado" && isOpen;
+  const canBid = !!token && isOpen && (hasManualAccess || (primaryStatus === "aprovado" && residenceStatus === "aprovado"));
   const bidButtonLabel = !token
     ? isUpcoming
       ? "Em breve"
       : "Entre para dar lance"
-    : primaryStatus !== "aprovado"
+    : !hasManualAccess && primaryStatus !== "aprovado"
       ? "Documento principal pendente"
-      : residenceStatus !== "aprovado"
+    : !hasManualAccess && residenceStatus !== "aprovado"
         ? "Comprovante pendente"
         : isUpcoming
           ? "Em breve"
@@ -245,11 +247,11 @@ export default function Lote() {
       setError("Faca login para dar lance.");
       return;
     }
-    if (primaryStatus !== "aprovado") {
+    if (!hasManualAccess && primaryStatus !== "aprovado") {
       setError("Documento principal pendente. Envie ou reenvie no perfil.");
       return;
     }
-    if (residenceStatus !== "aprovado") {
+    if (!hasManualAccess && residenceStatus !== "aprovado") {
       setError("Comprovante de residencia pendente. Envie ou reenvie no perfil.");
       return;
     }

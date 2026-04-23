@@ -132,7 +132,7 @@ export default function AdminSettings() {
     const [settingsRes, auctionsRes, usersRes, rulesRes, logsRes, runsRes] = await Promise.all([
       apiGetAuth("/api/admin/settings", currentToken),
       apiGetAuth("/api/admin/auctions", currentToken),
-      apiGetAuth("/api/admin/users", currentToken),
+      apiGetAuth("/api/admin/users?include_bots=1", currentToken),
       apiGetAuth("/api/admin/bid-automations", currentToken),
       apiGetAuth("/api/admin/logs", currentToken),
       apiGetAuth("/api/admin/bid-automation-runs", currentToken)
@@ -416,7 +416,7 @@ export default function AdminSettings() {
       );
       const created = Array.isArray(res.data) ? res.data : [];
       setDemoCreated(created);
-      const usersRes = await apiGetAuth("/api/admin/users", token);
+      const usersRes = await apiGetAuth("/api/admin/users?include_bots=1", token);
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       setMessage(created.length === 1 ? "Usuario de teste criado." : "Usuarios de teste criados.");
       await refreshLogs();
@@ -444,7 +444,7 @@ export default function AdminSettings() {
       );
       const created = Array.isArray(res.data) ? res.data : [];
       setBotCreated(created);
-      const usersRes = await apiGetAuth("/api/admin/users", token);
+      const usersRes = await apiGetAuth("/api/admin/users?include_bots=1", token);
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       setMessage(created.length === 1 ? "Bot criado." : "Bots criados.");
       await refreshLogs();

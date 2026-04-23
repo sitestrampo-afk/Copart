@@ -16,12 +16,13 @@ export default function Home() {
   const [bidAmount, setBidAmount] = useState("");
   const [bidError, setBidError] = useState("");
   const [bidMessage, setBidMessage] = useState("");
-  const [documentState, setDocumentState] = useState({ primary: null, residence: null });
+  const [documentState, setDocumentState] = useState({ primary: null, residence: null, bid_access_override_at: null });
 
-  const canBid = documentState.primary?.status === "aprovado" && documentState.residence?.status === "aprovado";
+  const hasManualAccess = !!documentState.bid_access_override_at;
+  const canBid = hasManualAccess || (documentState.primary?.status === "aprovado" && documentState.residence?.status === "aprovado");
   const missingDocs = [];
-  if (documentState.primary?.status !== "aprovado") missingDocs.push("documento principal");
-  if (documentState.residence?.status !== "aprovado") missingDocs.push("comprovante de residencia");
+  if (!hasManualAccess && documentState.primary?.status !== "aprovado") missingDocs.push("documento principal");
+  if (!hasManualAccess && documentState.residence?.status !== "aprovado") missingDocs.push("comprovante de residencia");
   const bidButtonLabel = canBid ? "Enviar lance" : "Documentos pendentes";
 
   function mergeAuctions(prev, next) {
@@ -98,7 +99,7 @@ export default function Home() {
     async function loadDocStatus() {
       const token = localStorage.getItem("userToken");
       if (!selected || !token) {
-        setDocumentState({ primary: null, residence: null });
+        setDocumentState({ primary: null, residence: null, bid_access_override_at: null });
         return;
       }
       try {
@@ -106,10 +107,11 @@ export default function Home() {
         if (!active) return;
         setDocumentState({
           primary: doc.data?.primary || null,
-          residence: doc.data?.residence || null
+          residence: doc.data?.residence || null,
+          bid_access_override_at: doc.data?.bid_access_override_at || null
         });
       } catch {
-        if (active) setDocumentState({ primary: null, residence: null });
+        if (active) setDocumentState({ primary: null, residence: null, bid_access_override_at: null });
       }
     }
     loadDocStatus();
