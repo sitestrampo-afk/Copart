@@ -1,9 +1,7 @@
-﻿import heroBanner from "../assets/img/img-banner.png";
-
 export default function Hero() {
   return (
     <section className="hero hero-market">
-      <div className="hero-market-bg" style={{ backgroundImage: `url(${heroBanner})` }} />
+      <div className="hero-market-bg" aria-hidden="true" />
       <div className="hero-market-content">
         <div className="hero-market-copy">
           <p className="hero-market-kicker">Leilão Copart</p>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiDeleteAuth, apiGetAuth, apiPostAuth, apiPutAuth } from "../services/api.js";
+import { apiGetAuth, apiPostAuth } from "../services/api.js";
 
 function normalizeListingType(value) {
   return value === "leilao" ? "leilao" : "lote";
@@ -14,53 +14,13 @@ function formatAuctionLabel(auction) {
   return parts.join(" | ");
 }
 
-function formatMoney(value) {
-  const numeric = Number(value || 0);
-  return numeric.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 function formatDateTime(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("pt-BR");
 }
 
-function createAutomationForm(defaultAuctionId = "") {
-  return {
-    name: "",
-    target_type: "lote",
-    auction_id: defaultAuctionId,
-    user_scope: "bots",
-    user_id: "",
-    bid_increment: "50",
-    max_amount: "",
-    max_steps: "1",
-    max_total_bids: "25",
-    max_bids_per_auction: "5",
-    window_minutes: "60",
-    window_max_bids: "20",
-    enabled: 1
-  };
-}
-
-function buildRulePayload(form) {
-  return {
-    name: form.name,
-    target_type: form.target_type,
-    auction_id: Number(form.auction_id || 0),
-    user_scope: form.user_scope,
-    user_id:
-      form.user_scope === "all" || (form.user_scope === "bots" && !form.user_id)
-        ? null
-        : Number(form.user_id || 0),
-    bid_increment: Number(form.bid_increment || 0),
-    max_amount: form.max_amount,
-    max_steps: Number(form.max_steps || 1),
-    max_total_bids: Number(form.max_total_bids || 25),
-    max_bids_per_auction: Number(form.max_bids_per_auction || 5),
-    window_minutes: Number(form.window_minutes || 60),
-    window_max_bids: Number(form.window_max_bids || 20),
-    enabled: form.enabled ? 1 : 0
-  };
+function getMultiSelectValues(event) {
+  return Array.from(event.target.selectedOptions || []).map((option) => option.value);
 }
 
 export default function AdminSettings() {
@@ -69,22 +29,17 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [runningCron, setRunningCron] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [opsMessage, setOpsMessage] = useState("");
   const [opsError, setOpsError] = useState("");
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [logsLoading, setLogsLoading] = useState(false);
   const [auctions, setAuctions] = useState([]);
   const [users, setUsers] = useState([]);
-  const [rules, setRules] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
   const [automationRuns, setAutomationRuns] = useState([]);
-  const [selectedRuleId, setSelectedRuleId] = useState("");
-  const [rulePreview, setRulePreview] = useState(null);
-  const [ruleHistory, setRuleHistory] = useState([]);
   const [selectedAuctionId, setSelectedAuctionId] = useState("");
+  const [automationSummary, setAutomationSummary] = useState(null);
   const [form, setForm] = useState({
     require_primary_doc: 1,
     require_residence_doc: 1,
@@ -96,29 +51,21 @@ export default function AdminSettings() {
     frontend_url: "",
     session_ttl_hours: 168
   });
-  const [automationForm, setAutomationForm] = useState(createAutomationForm());
-  const [editingRuleId, setEditingRuleId] = useState(null);
   const [demoForm, setDemoForm] = useState({ base_name: "Usuario Demo", quantity: 1 });
   const [demoCreated, setDemoCreated] = useState([]);
   const [botForm, setBotForm] = useState({ base_name: "Bot Fantasma", bot_label: "Bot Fantasma", quantity: 1 });
   const [botCreated, setBotCreated] = useState([]);
+  const [eventBidForm, setEventBidForm] = useState({ event_ids: [], mode: "first" });
+  const [eventViewForm, setEventViewForm] = useState({ event_ids: [], min_views: 100, max_views: 500 });
+  const [rescheduleForm, setRescheduleForm] = useState({
+    parent_auction_id: "",
+    starts_at: "",
+    ends_at: "",
+    lot_interval_minutes: 2,
+    reset_bids: 1,
+    reset_views: 1
+  });
 
-  const targetAuctions = useMemo(
-    () => auctions.filter((auction) => normalizeListingType(auction.listing_type) === automationForm.target_type),
-    [auctions, automationForm.target_type]
-  );
-  const selectedAuction = useMemo(
-    () => targetAuctions.find((auction) => String(auction.id) === String(automationForm.auction_id)) || null,
-    [targetAuctions, automationForm.auction_id]
-  );
-  const selectedRule = useMemo(
-    () => rules.find((rule) => String(rule.id) === String(selectedRuleId)) || null,
-    [rules, selectedRuleId]
-  );
-  const eligibleUsers = useMemo(
-    () => users.filter((user) => user.approved_at && user.email_verified_at && !Number(user.is_bot)),
-    [users]
-  );
   const eligibleBots = useMemo(
     () => users.filter((user) => user.approved_at && user.email_verified_at && Number(user.is_bot)),
     [users]
@@ -127,24 +74,28 @@ export default function AdminSettings() {
     () => auctions.find((auction) => String(auction.id) === String(selectedAuctionId)) || null,
     [auctions, selectedAuctionId]
   );
+  const folderAuctions = useMemo(
+    () => auctions.filter((auction) => normalizeListingType(auction.listing_type) === "leilao"),
+    [auctions]
+  );
+  const selectedRescheduleAuction = useMemo(
+    () => folderAuctions.find((auction) => String(auction.id) === String(rescheduleForm.parent_auction_id)) || null,
+    [folderAuctions, rescheduleForm.parent_auction_id]
+  );
 
   async function refreshSupportData(currentToken) {
-    const [settingsRes, auctionsRes, usersRes, rulesRes, logsRes, runsRes] = await Promise.all([
+    const [settingsRes, auctionsRes, usersRes, logsRes, runsRes] = await Promise.all([
       apiGetAuth("/api/admin/settings", currentToken),
       apiGetAuth("/api/admin/auctions", currentToken),
       apiGetAuth("/api/admin/users?include_bots=1", currentToken),
-      apiGetAuth("/api/admin/bid-automations", currentToken),
       apiGetAuth("/api/admin/logs", currentToken),
       apiGetAuth("/api/admin/bid-automation-runs", currentToken)
     ]);
 
     setForm((current) => ({ ...current, ...(settingsRes.data || {}) }));
     const auctionList = Array.isArray(auctionsRes.data) ? auctionsRes.data : [];
-    const userList = Array.isArray(usersRes.data) ? usersRes.data : [];
-    const ruleList = Array.isArray(rulesRes.data) ? rulesRes.data : [];
     setAuctions(auctionList);
-    setUsers(userList);
-    setRules(ruleList);
+    setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
     setAdminLogs(Array.isArray(logsRes.data) ? logsRes.data : []);
     setAutomationRuns(Array.isArray(runsRes.data) ? runsRes.data : []);
 
@@ -152,15 +103,17 @@ export default function AdminSettings() {
       setSelectedAuctionId(String(auctionList[0].id));
     }
 
-    setAutomationForm((current) => {
-      if (current.auction_id && auctionList.some((auction) => String(auction.id) === String(current.auction_id))) {
-        return current;
-      }
-      const defaultAuction =
-        auctionList.find((auction) => normalizeListingType(auction.listing_type) === current.target_type) ||
-        auctionList[0] ||
+    setRescheduleForm((current) => {
+      const nextParent =
+        auctionList.find((auction) => String(auction.id) === String(current.parent_auction_id) && normalizeListingType(auction.listing_type) === "leilao") ||
+        auctionList.find((auction) => normalizeListingType(auction.listing_type) === "leilao") ||
         null;
-      return defaultAuction ? { ...current, auction_id: String(defaultAuction.id) } : current;
+      return {
+        ...current,
+        parent_auction_id: nextParent ? String(nextParent.id) : current.parent_auction_id,
+        starts_at: current.starts_at || (nextParent?.starts_at ? String(nextParent.starts_at).slice(0, 16).replace(" ", "T") : ""),
+        ends_at: current.ends_at || (nextParent?.ends_at ? String(nextParent.ends_at).slice(0, 16).replace(" ", "T") : "")
+      };
     });
   }
 
@@ -172,13 +125,10 @@ export default function AdminSettings() {
       setOpsError("");
       setOpsMessage("");
       try {
-        if (!token) {
-          throw new Error("Token ausente");
-        }
+        if (!token) throw new Error("Token ausente");
         await refreshSupportData(token);
       } catch (err) {
-        if (!mounted) return;
-        setError(err.message || "Erro na requisicao");
+        if (mounted) setError(err.message || "Erro na requisicao");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -187,55 +137,40 @@ export default function AdminSettings() {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
-    if (!automationForm.auction_id) return;
-    const exists = targetAuctions.some((auction) => String(auction.id) === String(automationForm.auction_id));
-    if (!exists) {
-      const nextAuction = targetAuctions[0] || null;
-      setAutomationForm((current) => ({ ...current, auction_id: nextAuction ? String(nextAuction.id) : "" }));
-    }
-  }, [automationForm.target_type, targetAuctions]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!selectedRescheduleAuction) return;
+    setRescheduleForm((current) => {
+      if (String(current.parent_auction_id) !== String(selectedRescheduleAuction.id)) return current;
+      return {
+        ...current,
+        starts_at: current.starts_at || (selectedRescheduleAuction.starts_at ? String(selectedRescheduleAuction.starts_at).slice(0, 16).replace(" ", "T") : ""),
+        ends_at: current.ends_at || (selectedRescheduleAuction.ends_at ? String(selectedRescheduleAuction.ends_at).slice(0, 16).replace(" ", "T") : "")
+      };
+    });
+  }, [selectedRescheduleAuction]);
 
   function setField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function startNewRule() {
-    const fallbackAuction = targetAuctions[0] || auctions[0] || null;
-    setEditingRuleId(null);
-    setRulePreview(null);
-    setRuleHistory([]);
-    setSelectedRuleId("");
-    setAutomationForm(createAutomationForm(fallbackAuction ? String(fallbackAuction.id) : ""));
-    setActiveTab("automation");
+  async function refreshLogs() {
+    setLogsLoading(true);
+    try {
+      const [logsRes, runsRes] = await Promise.all([
+        apiGetAuth("/api/admin/logs", token),
+        apiGetAuth("/api/admin/bid-automation-runs", token)
+      ]);
+      setAdminLogs(Array.isArray(logsRes.data) ? logsRes.data : []);
+      setAutomationRuns(Array.isArray(runsRes.data) ? runsRes.data : []);
+    } finally {
+      setLogsLoading(false);
+    }
   }
 
-  function loadRuleToForm(rule) {
-    setEditingRuleId(rule.id);
-    setAutomationForm({
-      name: rule.name || "",
-      target_type: normalizeListingType(rule.target_type),
-      auction_id: String(rule.auction_id || ""),
-      user_scope: rule.user_scope || "individual",
-      user_id: rule.user_id ? String(rule.user_id) : "",
-      bid_increment: String(rule.bid_increment ?? "50"),
-      max_amount: rule.max_amount === null || rule.max_amount === undefined ? "" : String(rule.max_amount),
-      max_steps: String(rule.max_steps ?? 1),
-      max_total_bids: String(rule.max_total_bids ?? 25),
-      max_bids_per_auction: String(rule.max_bids_per_auction ?? 5),
-      window_minutes: String(rule.window_minutes ?? 60),
-      window_max_bids: String(rule.window_max_bids ?? 20),
-      enabled: Number(rule.enabled) ? 1 : 0
-    });
-    setSelectedRuleId(String(rule.id));
-    setActiveTab("automation");
-  }
-
-  async function handleSave(e) {
-    e.preventDefault();
+  async function handleSave(event) {
+    event.preventDefault();
     setSaving(true);
     setError("");
     setMessage("");
@@ -258,155 +193,10 @@ export default function AdminSettings() {
     }
   }
 
-  async function refreshRules() {
-    const rulesRes = await apiGetAuth("/api/admin/bid-automations", token);
-    setRules(Array.isArray(rulesRes.data) ? rulesRes.data : []);
-  }
-
-  async function refreshLogs() {
-    setLogsLoading(true);
-    try {
-      const [logsRes, runsRes] = await Promise.all([
-        apiGetAuth("/api/admin/logs", token),
-        apiGetAuth("/api/admin/bid-automation-runs", token)
-      ]);
-      setAdminLogs(Array.isArray(logsRes.data) ? logsRes.data : []);
-      setAutomationRuns(Array.isArray(runsRes.data) ? runsRes.data : []);
-    } finally {
-      setLogsLoading(false);
-    }
-  }
-
-  async function refreshHistory(ruleId) {
-    if (!ruleId) return;
-    setHistoryLoading(true);
-    try {
-      const res = await apiGetAuth(`/api/admin/bid-automations/${ruleId}/history`, token);
-      setRuleHistory(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      setError(err.message || "Erro ao carregar historico");
-    } finally {
-      setHistoryLoading(false);
-    }
-  }
-
-  async function handleSelectRule(rule) {
-    setSelectedRuleId(String(rule.id));
-    setRulePreview(null);
-    await refreshHistory(rule.id);
-  }
-
-  async function handlePreviewRule(ruleId = selectedRuleId) {
-    if (!ruleId) return;
-    setPreviewLoading(true);
+  async function handleCreateDemoUsers(event) {
+    event.preventDefault();
     setError("");
     setMessage("");
-    try {
-      const res = await apiPostAuth(`/api/admin/bid-automations/${ruleId}/preview`, {}, token);
-      setRulePreview(res.data || null);
-      await refreshHistory(ruleId);
-      await refreshRules();
-    } catch (err) {
-      setError(err.message || "Erro ao gerar preview");
-    } finally {
-      setPreviewLoading(false);
-    }
-  }
-
-  async function handleRunRule(ruleId = selectedRuleId) {
-    if (!ruleId) return;
-    setOpsError("");
-    setOpsMessage("");
-    try {
-      const res = await apiPostAuth(`/api/admin/bid-automations/${ruleId}/run`, {}, token);
-      setOpsMessage(res.message || "Regra executada");
-      await refreshRules();
-      await refreshHistory(ruleId);
-      await refreshLogs();
-    } catch (err) {
-      setOpsError(err.message || "Erro ao executar regra");
-    }
-  }
-
-  async function handleSubmitRule(e) {
-    if (e?.preventDefault) e.preventDefault();
-    setSaving(true);
-    setError("");
-    setMessage("");
-    try {
-      const payload = buildRulePayload(automationForm);
-      if (!payload.name) throw new Error("Nome obrigatorio");
-      if (!payload.auction_id) throw new Error("Selecione um alvo");
-      if (payload.user_scope === "individual" && !payload.user_id) throw new Error("Selecione um usuario");
-      if (payload.user_scope === "bots" && payload.user_id !== null && !payload.user_id) throw new Error("Selecione um bot valido ou deixe em branco");
-      if (editingRuleId) {
-        await apiPutAuth(`/api/admin/bid-automations/${editingRuleId}`, payload, token);
-        setMessage("Regra atualizada.");
-      } else {
-        await apiPostAuth("/api/admin/bid-automations", payload, token);
-        setMessage("Regra criada.");
-      }
-      setEditingRuleId(null);
-      await refreshRules();
-      await refreshLogs();
-    } catch (err) {
-      setError(err.message || "Erro ao salvar regra");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleToggleRule(rule) {
-    setOpsError("");
-    setOpsMessage("");
-    try {
-      const payload = buildRulePayload({
-        ...rule,
-        auction_id: String(rule.auction_id),
-        user_id: rule.user_id ? String(rule.user_id) : "",
-        bid_increment: String(rule.bid_increment ?? "50"),
-        max_amount: rule.max_amount === null || rule.max_amount === undefined ? "" : String(rule.max_amount),
-        max_steps: String(rule.max_steps ?? 1),
-        max_total_bids: String(rule.max_total_bids ?? 25),
-        max_bids_per_auction: String(rule.max_bids_per_auction ?? 5),
-        window_minutes: String(rule.window_minutes ?? 60),
-        window_max_bids: String(rule.window_max_bids ?? 20),
-        enabled: Number(rule.enabled) ? 0 : 1
-      });
-      await apiPutAuth(`/api/admin/bid-automations/${rule.id}`, payload, token);
-      setOpsMessage(Number(rule.enabled) ? "Regra pausada." : "Regra reativada.");
-      await refreshRules();
-      await refreshLogs();
-      if (String(selectedRuleId) === String(rule.id)) {
-        await refreshHistory(rule.id);
-      }
-    } catch (err) {
-      setOpsError(err.message || "Erro ao alterar regra");
-    }
-  }
-
-  async function handleDeleteRule(id) {
-    setError("");
-    setMessage("");
-    try {
-      await apiDeleteAuth(`/api/admin/bid-automations/${id}`, token);
-      setRules((current) => current.filter((rule) => rule.id !== id));
-      setSelectedRuleId((current) => (String(current) === String(id) ? "" : current));
-      setRulePreview(null);
-      setRuleHistory([]);
-      setMessage("Regra removida.");
-      await refreshLogs();
-    } catch (err) {
-      setError(err.message || "Erro ao remover regra");
-    }
-  }
-
-  async function handleCreateDemoUsers(e) {
-    if (e?.preventDefault) e.preventDefault();
-    setError("");
-    setMessage("");
-    setOpsError("");
-    setOpsMessage("");
     setDemoCreated([]);
     try {
       const res = await apiPostAuth(
@@ -414,23 +204,20 @@ export default function AdminSettings() {
         { base_name: demoForm.base_name, quantity: Number(demoForm.quantity || 1) },
         token
       );
-      const created = Array.isArray(res.data) ? res.data : [];
-      setDemoCreated(created);
+      setDemoCreated(Array.isArray(res.data) ? res.data : []);
       const usersRes = await apiGetAuth("/api/admin/users?include_bots=1", token);
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-      setMessage(created.length === 1 ? "Usuario de teste criado." : "Usuarios de teste criados.");
+      setMessage("Usuarios de teste criados.");
       await refreshLogs();
     } catch (err) {
       setError(err.message || "Erro ao criar usuario");
     }
   }
 
-  async function handleCreateBots(e) {
-    if (e?.preventDefault) e.preventDefault();
+  async function handleCreateBots(event) {
+    event.preventDefault();
     setError("");
     setMessage("");
-    setOpsError("");
-    setOpsMessage("");
     setBotCreated([]);
     try {
       const res = await apiPostAuth(
@@ -442,14 +229,58 @@ export default function AdminSettings() {
         },
         token
       );
-      const created = Array.isArray(res.data) ? res.data : [];
-      setBotCreated(created);
+      setBotCreated(Array.isArray(res.data) ? res.data : []);
       const usersRes = await apiGetAuth("/api/admin/users?include_bots=1", token);
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-      setMessage(created.length === 1 ? "Bot criado." : "Bots criados.");
+      setMessage("Bots criados.");
       await refreshLogs();
     } catch (err) {
       setError(err.message || "Erro ao criar bot");
+    }
+  }
+
+  async function handleRunEventAutoBids(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setAutomationSummary(null);
+    try {
+      const res = await apiPostAuth(
+        "/api/admin/event-auto-bids",
+        {
+          event_ids: eventBidForm.event_ids,
+          mode: eventBidForm.mode
+        },
+        token
+      );
+      setMessage(res.message || "Automacao de lances executada.");
+      setAutomationSummary(res.data || null);
+      await refreshSupportData(token);
+    } catch (err) {
+      setError(err.message || "Erro ao executar automacao de lances");
+    }
+  }
+
+  async function handleRunEventAutoViews(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setAutomationSummary(null);
+    try {
+      const res = await apiPostAuth(
+        "/api/admin/event-auto-views",
+        {
+          event_ids: eventViewForm.event_ids,
+          min_views: Number(eventViewForm.min_views || 100),
+          max_views: Number(eventViewForm.max_views || 500)
+        },
+        token
+      );
+      setMessage(res.message || "Automacao de visualizacoes executada.");
+      setAutomationSummary(res.data || null);
+      await refreshSupportData(token);
+    } catch (err) {
+      setError(err.message || "Erro ao executar automacao de visualizacoes");
     }
   }
 
@@ -496,108 +327,33 @@ export default function AdminSettings() {
     }
   }
 
-  function renderRuleHistory() {
-    if (!selectedRule) {
-      return <div className="admin-muted">Selecione uma regra para ver preview e historico.</div>;
+  async function handleRescheduleFamily(event) {
+    event.preventDefault();
+    if (!rescheduleForm.parent_auction_id) {
+      setOpsError("Selecione uma pasta de leilao.");
+      return;
     }
-
-    return (
-      <div className="settings-section">
-        <div className="admin-card-head">
-          <div>
-            <h3>Detalhes da regra</h3>
-            <p className="admin-muted">{selectedRule.name}</p>
-          </div>
-          <div className="admin-row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="ghost" onClick={() => handlePreviewRule(selectedRule.id)} disabled={previewLoading}>
-              {previewLoading ? "Gerando..." : "Preview"}
-            </button>
-            <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleRunRule(selectedRule.id)}>
-              Executar agora
-            </button>
-          </div>
-        </div>
-
-        {rulePreview ? (
-          <div className="admin-alert admin-alert-info">
-            <strong>Preview:</strong> {rulePreview.planned_bids || 0} lances planejados em {rulePreview.targets_count || 0} alvos para{" "}
-            {rulePreview.audience_count || 0} usuarios.
-            <div className="table" style={{ marginTop: 12 }}>
-              <div>
-                <span>Alvo</span>
-                <span>Planejado</span>
-                <span>Inicio sugerido</span>
-                <span>Usuarios</span>
-              </div>
-              {(rulePreview.by_target || []).map((item) => (
-                <div key={item.auction_id}>
-                  <span>{item.title}</span>
-                  <span>{item.planned}</span>
-                  <span>{formatMoney(item.start_bid)}</span>
-                  <span>{item.users || 0}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="settings-grid-2">
-          <div className="kv">
-            <div className="k">Alvo</div>
-            <div className="v">
-              {normalizeListingType(selectedRule.target_type) === "leilao" ? "Leilao" : "Lote"} - {selectedRule.auction_title}
-            </div>
-          </div>
-          <div className="kv">
-            <div className="k">Usuarios</div>
-            <div className="v">
-              {selectedRule.user_scope === "all"
-                ? "Todos os usuarios humanos"
-                : selectedRule.user_scope === "bots"
-                ? selectedRule.user_bot_label || selectedRule.user_name
-                  ? `Bot fantasma: ${selectedRule.user_bot_label || selectedRule.user_name}`
-                  : "Bots fantasma"
-                : selectedRule.user_name || "-"}
-            </div>
-          </div>
-          <div className="kv">
-            <div className="k">Status</div>
-            <div className="v">{Number(selectedRule.enabled) ? "Ativa" : "Pausada"}</div>
-          </div>
-          <div className="kv">
-            <div className="k">Ultima execucao</div>
-            <div className="v">{formatDateTime(selectedRule.last_run_at)}</div>
-          </div>
-        </div>
-
-        <div className="admin-divider" />
-        <h4>Historico de execucao</h4>
-        {historyLoading ? (
-          <div className="admin-muted">Carregando historico...</div>
-        ) : ruleHistory.length === 0 ? (
-          <div className="admin-muted">Nenhuma execucao registrada para esta regra.</div>
-        ) : (
-          <div className="table">
-            <div>
-              <span>Data</span>
-              <span>Status</span>
-              <span>Planejado</span>
-              <span>Criados</span>
-              <span>Motivo</span>
-            </div>
-            {ruleHistory.map((item) => (
-              <div key={item.id}>
-                <span>{formatDateTime(item.created_at)}</span>
-                <span>{item.status}</span>
-                <span>{item.bids_planned}</span>
-                <span>{item.bids_created}</span>
-                <span>{item.reason || "-"}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    setOpsError("");
+    setOpsMessage("");
+    try {
+      const res = await apiPostAuth(
+        `/api/admin/auctions/${Number(rescheduleForm.parent_auction_id)}/reschedule-family`,
+        {
+          starts_at: rescheduleForm.starts_at,
+          ends_at: rescheduleForm.ends_at,
+          lot_interval_minutes: Number(rescheduleForm.lot_interval_minutes || 2),
+          reset_bids: Number(rescheduleForm.reset_bids || 0),
+          reset_views: Number(rescheduleForm.reset_views || 0)
+        },
+        token
+      );
+      setOpsMessage(
+        `${res.message || "Evento configurado"} | Lotes ajustados: ${res.children ?? 0} | Lances zerados: ${res.reset_bids ? "sim" : "nao"} | Views zeradas: ${res.reset_views ? "sim" : "nao"}`
+      );
+      await refreshSupportData(token);
+    } catch (err) {
+      setOpsError(err.message || "Erro ao reprogramar evento");
+    }
   }
 
   return (
@@ -624,9 +380,7 @@ export default function AdminSettings() {
               className={`settings-tab ${activeTab === tab.key ? "active" : ""}`}
               onClick={() => {
                 setActiveTab(tab.key);
-                if (tab.key === "logs") {
-                  refreshLogs();
-                }
+                if (tab.key === "logs") refreshLogs();
               }}
             >
               {tab.label}
@@ -641,288 +395,160 @@ export default function AdminSettings() {
         {activeTab === "automation" && (
           <div className="settings-stack">
             <div className="settings-section">
-              <h3>Nova regra ou edicao</h3>
-              <p className="admin-muted">
-                Configure lance automatico por lote, por leilao, por usuario individual ou para todos os usuarios aprovados.
-              </p>
+              <h3>Lances automaticos por evento</h3>
+              <p className="admin-muted">Selecione uma ou mais pastas. Os lances seguem o incremento minimo de cada lote automaticamente.</p>
 
-              <form className="settings-form" onSubmit={handleSubmitRule}>
+              <div className="stats" style={{ marginBottom: 16 }}>
+                <div className="stat-card"><span>Eventos</span><strong>{folderAuctions.length}</strong></div>
+                <div className="stat-card"><span>Bots elegiveis</span><strong>{eligibleBots.length}</strong></div>
+                <div className="stat-card"><span>Lotes totais</span><strong>{auctions.filter((item) => normalizeListingType(item.listing_type) === "lote").length}</strong></div>
+                <div className="stat-card"><span>Execucoes</span><strong>{automationRuns.length}</strong></div>
+              </div>
+
+              <form className="settings-form" onSubmit={handleRunEventAutoBids}>
                 <div className="settings-grid-2">
                   <label className="field">
-                    <span>Nome da regra</span>
-                    <input
-                      value={automationForm.name}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, name: e.target.value }))}
-                      placeholder="Ex: Lance demo lote 51"
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Tipo de alvo</span>
-                    <select
-                      value={automationForm.target_type}
-                      onChange={(e) =>
-                        setAutomationForm((current) => ({
-                          ...current,
-                          target_type: e.target.value,
-                          auction_id: targetAuctions.some((auction) => String(auction.id) === String(current.auction_id))
-                            ? current.auction_id
-                            : ""
-                        }))
-                      }
-                    >
-                      <option value="lote">Lote individual</option>
-                      <option value="leilao">Leilao com lotes</option>
+                    <span>Tipo de lance automatico</span>
+                    <select value={eventBidForm.mode} onChange={(e) => setEventBidForm((current) => ({ ...current, mode: e.target.value }))}>
+                      <option value="first">Primeiro lance</option>
+                      <option value="mass">Lance em massa</option>
                     </select>
-                    <small>{automationForm.target_type === "leilao" ? "A regra atinge os lotes filhos." : "A regra atinge apenas este lote."}</small>
+                    <small>{eventBidForm.mode === "first" ? "Da 1 lance por lote." : "Da de 2 a 10 lances aleatorios por lote."}</small>
                   </label>
 
-                  <label className="field">
-                    <span>{automationForm.target_type === "leilao" ? "Leilao alvo" : "Lote alvo"}</span>
-                    <select
-                      value={automationForm.auction_id}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, auction_id: e.target.value }))}
-                      required
-                    >
-                      <option value="">Selecione</option>
-                      {targetAuctions.map((auction) => (
+                  <label className="field span-2">
+                    <span>Eventos selecionados</span>
+                    <select multiple value={eventBidForm.event_ids} onChange={(e) => setEventBidForm((current) => ({ ...current, event_ids: getMultiSelectValues(e) }))}>
+                      {folderAuctions.map((auction) => (
                         <option key={auction.id} value={auction.id}>
                           {formatAuctionLabel(auction)}
                         </option>
                       ))}
                     </select>
-                    <small>{selectedAuction ? `Selecionado: ${selectedAuction.title}` : "Selecione um alvo."}</small>
-                  </label>
-
-                  <label className="field">
-                    <span>Escopo dos usuarios</span>
-                    <select
-                      value={automationForm.user_scope}
-                      onChange={(e) =>
-                        setAutomationForm((current) => ({
-                          ...current,
-                          user_scope: e.target.value,
-                          user_id: e.target.value === "all" || e.target.value === "bots" ? "" : current.user_id
-                        }))
-                      }
-                    >
-                      <option value="individual">Usuario individual</option>
-                      <option value="all">Todos os usuarios</option>
-                      <option value="bots">Bots fantasma</option>
-                    </select>
-                    <small>Escolha um usuario humano, toda a base humana ou os bots fantasma criados pelo sistema.</small>
-                  </label>
-
-                  {automationForm.user_scope === "individual" ? (
-                    <label className="field">
-                      <span>Usuario que dara os lances</span>
-                      <select
-                        value={automationForm.user_id}
-                        onChange={(e) => setAutomationForm((current) => ({ ...current, user_id: e.target.value }))}
-                        required
-                      >
-                        <option value="">Selecione um usuario aprovado</option>
-                        {eligibleUsers.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            [{user.id}] {user.name} - {user.email}
-                          </option>
-                        ))}
-                      </select>
-                      <small>Somente usuarios aprovados e verificados entram na regra.</small>
-                    </label>
-                  ) : automationForm.user_scope === "bots" ? (
-                    <label className="field">
-                      <span>Bot fantasma</span>
-                      <select
-                        value={automationForm.user_id}
-                        onChange={(e) => setAutomationForm((current) => ({ ...current, user_id: e.target.value }))}
-                      >
-                        <option value="">Todos os bots fantasma</option>
-                        {eligibleBots.map((bot) => (
-                          <option key={bot.id} value={bot.id}>
-                            [{bot.id}] {bot.bot_label || bot.name} - {bot.email}
-                          </option>
-                        ))}
-                      </select>
-                      <small>Deixe vazio para usar todos os bots aprovados e verificados.</small>
-                    </label>
-                  ) : (
-                    <div className="admin-alert admin-alert-info">
-                      A regra sera aplicada para todos os usuarios humanos aprovados e verificados no banco.
-                    </div>
-                  )}
-
-                  <label className="field">
-                    <span>Incremento por lance (R$)</span>
-                    <input
-                      type="number"
-                      min="1"
-                      step="0.01"
-                      value={automationForm.bid_increment}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, bid_increment: e.target.value }))}
-                      required
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Lance maximo opcional (R$)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={automationForm.max_amount}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, max_amount: e.target.value }))}
-                      placeholder="Deixe vazio para ilimitado"
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Maximo de execucoes por rodada</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={automationForm.max_steps}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, max_steps: e.target.value }))}
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Limite global da regra</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="500"
-                      value={automationForm.max_total_bids}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, max_total_bids: e.target.value }))}
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Limite por lote</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={automationForm.max_bids_per_auction}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, max_bids_per_auction: e.target.value }))}
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Janela de tempo (min)</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="1440"
-                      value={automationForm.window_minutes}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, window_minutes: e.target.value }))}
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Limite por periodo</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="500"
-                      value={automationForm.window_max_bids}
-                      onChange={(e) => setAutomationForm((current) => ({ ...current, window_max_bids: e.target.value }))}
-                    />
+                    <small>Segure `Ctrl` para selecionar mais de uma pasta.</small>
                   </label>
                 </div>
 
-                <label className="switch-row">
-                  <input
-                    type="checkbox"
-                    checked={!!automationForm.enabled}
-                    onChange={(e) => setAutomationForm((current) => ({ ...current, enabled: e.target.checked ? 1 : 0 }))}
-                  />
-                  <span>{editingRuleId ? "Regra ativa" : "Ativar regra imediatamente"}</span>
-                </label>
-
                 <div className="settings-actions">
-                  {editingRuleId ? (
-                    <button type="button" className="ghost" onClick={startNewRule}>
-                      Cancelar edicao
-                    </button>
-                  ) : null}
-                  <button className="admin-btn admin-btn-primary" type="submit" disabled={loading || saving}>
-                    {saving ? "Salvando..." : editingRuleId ? "Salvar alteracoes" : "Criar regra"}
+                  <button className="admin-btn admin-btn-primary" type="submit" disabled={loading}>
+                    Executar lances automaticos
                   </button>
                 </div>
               </form>
             </div>
 
-            <div className="settings-grid-2 settings-stack">
-              <div className="settings-section">
-                <h3>Regras cadastradas</h3>
-                {rules.length === 0 ? (
-                  <div className="admin-muted">Nenhuma regra criada ainda.</div>
-                ) : (
-                  <div className="table admin-table-pro">
-                    <div>
-                      <span>Nome</span>
-                      <span>Alvo</span>
-                      <span>Usuarios</span>
-                      <span>Limites</span>
-                      <span>Status</span>
-                      <span>Acoes</span>
-                    </div>
-                    {rules.map((rule) => (
-                      <div key={rule.id}>
-                        <span>{rule.name}</span>
-                        <span>
-                          {normalizeListingType(rule.target_type) === "leilao" ? "Leilao" : "Lote"} - {rule.auction_title}
-                        </span>
-                        <span>
-                          {rule.user_scope === "all"
-                            ? "Todos os usuarios humanos"
-                            : rule.user_scope === "bots"
-                            ? rule.user_bot_label || rule.user_name
-                              ? `Bot fantasma: ${rule.user_bot_label || rule.user_name}`
-                              : "Bots fantasma"
-                            : rule.user_name || "-"}
-                          <div className="muted">
-                            {rule.user_scope === "all"
-                              ? "Base humana aprovada e verificada"
-                              : rule.user_scope === "bots"
-                              ? "Base de bots aprovados e verificados"
-                              : rule.user_email}
-                          </div>
-                        </span>
-                        <span>
-                          {formatMoney(rule.bid_increment)}
-                          <div className="muted">Max: {rule.max_amount ? formatMoney(rule.max_amount) : "ilimitado"}</div>
-                        </span>
-                        <span>{rule.enabled ? "Ativa" : "Pausada"}</span>
-                        <span>
-                          <div className="rule-actions">
-                            <button type="button" className="ghost" onClick={() => loadRuleToForm(rule)}>
-                              Editar
-                            </button>
-                            <button type="button" className="ghost" onClick={() => handleSelectRule(rule)}>
-                              Historico
-                            </button>
-                            <button type="button" className="ghost" onClick={() => handlePreviewRule(rule.id)}>
-                              Preview
-                            </button>
-                            <button type="button" className="ghost" onClick={() => handleToggleRule(rule)}>
-                              {rule.enabled ? "Pausar" : "Reativar"}
-                            </button>
-                            <button type="button" className="ghost" onClick={() => handleDeleteRule(rule.id)}>
-                              Remover
-                            </button>
-                          </div>
-                        </span>
-                      </div>
+            <div className="settings-section">
+              <h3>Automatizar visualizacao</h3>
+              <p className="admin-muted">Aumenta as visualizacoes dos lotes das pastas selecionadas com volume aleatorio por lote.</p>
+
+              <form className="settings-form" onSubmit={handleRunEventAutoViews}>
+                <div className="settings-grid-2">
+                  <label className="field span-2">
+                    <span>Eventos selecionados</span>
+                    <select multiple value={eventViewForm.event_ids} onChange={(e) => setEventViewForm((current) => ({ ...current, event_ids: getMultiSelectValues(e) }))}>
+                      {folderAuctions.map((auction) => (
+                        <option key={auction.id} value={auction.id}>
+                          {formatAuctionLabel(auction)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="field">
+                    <span>Minimo por lote</span>
+                    <input type="number" min="1" max="5000" value={eventViewForm.min_views} onChange={(e) => setEventViewForm((current) => ({ ...current, min_views: e.target.value }))} />
+                  </label>
+
+                  <label className="field">
+                    <span>Maximo por lote</span>
+                    <input type="number" min="1" max="5000" value={eventViewForm.max_views} onChange={(e) => setEventViewForm((current) => ({ ...current, max_views: e.target.value }))} />
+                  </label>
+                </div>
+
+                <div className="settings-actions">
+                  <button className="admin-btn admin-btn-primary" type="submit" disabled={loading}>
+                    Executar visualizacoes
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <form className="settings-section" onSubmit={handleRescheduleFamily}>
+              <h3>Configurar evento e zerar historico</h3>
+              <p className="admin-muted">Seleciona a pasta do leilao, zera lances e visualizacoes e reconfigura inicio, fim e intervalo de encerramento dos lotes.</p>
+
+              {opsError ? <div className="admin-alert admin-alert-danger">{opsError}</div> : null}
+              {opsMessage ? <div className="admin-alert admin-alert-ok">{opsMessage}</div> : null}
+
+              <div className="settings-grid-2">
+                <label className="field">
+                  <span>Pasta do leilao</span>
+                  <select value={rescheduleForm.parent_auction_id} onChange={(e) => setRescheduleForm((current) => ({ ...current, parent_auction_id: e.target.value }))}>
+                    <option value="">Selecione</option>
+                    {folderAuctions.map((auction) => (
+                      <option key={auction.id} value={auction.id}>
+                        {formatAuctionLabel(auction)}
+                      </option>
                     ))}
-                  </div>
-                )}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Intervalo entre lotes (min)</span>
+                  <input type="number" min="1" max="120" value={rescheduleForm.lot_interval_minutes} onChange={(e) => setRescheduleForm((current) => ({ ...current, lot_interval_minutes: e.target.value }))} />
+                </label>
+
+                <label className="field">
+                  <span>Data / hora de inicio</span>
+                  <input type="datetime-local" value={rescheduleForm.starts_at} onChange={(e) => setRescheduleForm((current) => ({ ...current, starts_at: e.target.value }))} />
+                </label>
+
+                <label className="field">
+                  <span>Data / hora final</span>
+                  <input type="datetime-local" value={rescheduleForm.ends_at} onChange={(e) => setRescheduleForm((current) => ({ ...current, ends_at: e.target.value }))} />
+                </label>
               </div>
 
-              <div className="settings-section">{renderRuleHistory()}</div>
-            </div>
+              <div className="settings-grid-2" style={{ marginTop: 12 }}>
+                <label className="switch-row">
+                  <input type="checkbox" checked={!!rescheduleForm.reset_bids} onChange={(e) => setRescheduleForm((current) => ({ ...current, reset_bids: e.target.checked ? 1 : 0 }))} />
+                  <span>Zerar todos os lances dos lotes desse evento</span>
+                </label>
+
+                <label className="switch-row">
+                  <input type="checkbox" checked={!!rescheduleForm.reset_views} onChange={(e) => setRescheduleForm((current) => ({ ...current, reset_views: e.target.checked ? 1 : 0 }))} />
+                  <span>Zerar todas as visualizacoes dos lotes desse evento</span>
+                </label>
+              </div>
+
+              <div className="settings-actions">
+                <button className="admin-btn admin-btn-primary" type="submit">
+                  Configurar evento
+                </button>
+              </div>
+            </form>
+
+            {automationSummary ? (
+              <div className="settings-section">
+                <h3>Resumo da ultima automacao</h3>
+                <div className="table admin-table-pro">
+                  <div>
+                    <span>Evento</span>
+                    <span>Lotes</span>
+                    <span>Resultado</span>
+                    <span>Modo</span>
+                  </div>
+                  {(automationSummary.events || []).map((item) => (
+                    <div key={item.event_id}>
+                      <span>{item.event_title || `Evento #${item.event_id}`}</span>
+                      <span>{item.lots || 0}</span>
+                      <span>{item.bids_created ?? item.views_created ?? 0}</span>
+                      <span>{automationSummary.mode || "views"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -930,37 +556,21 @@ export default function AdminSettings() {
           <div className="settings-stack">
             <div className="settings-section">
               <h3>Bots fantasma</h3>
-              <p className="admin-muted">
-                Cria contas aprovadas e verificadas que o motor de automacao usa como autores reais dos lances.
-              </p>
+              <p className="admin-muted">Cria contas aprovadas e verificadas para uso nas automacoes.</p>
 
               <form className="settings-form" onSubmit={handleCreateBots}>
                 <div className="settings-grid-2">
                   <label className="field">
                     <span>Nome base do bot</span>
-                    <input
-                      value={botForm.base_name}
-                      onChange={(e) => setBotForm((current) => ({ ...current, base_name: e.target.value }))}
-                      placeholder="Bot Fantasma"
-                    />
+                    <input value={botForm.base_name} onChange={(e) => setBotForm((current) => ({ ...current, base_name: e.target.value }))} placeholder="Bot Fantasma" />
                   </label>
                   <label className="field">
                     <span>Etiqueta do bot</span>
-                    <input
-                      value={botForm.bot_label}
-                      onChange={(e) => setBotForm((current) => ({ ...current, bot_label: e.target.value }))}
-                      placeholder="Bot Fantasma"
-                    />
+                    <input value={botForm.bot_label} onChange={(e) => setBotForm((current) => ({ ...current, bot_label: e.target.value }))} placeholder="Bot Fantasma" />
                   </label>
                   <label className="field">
                     <span>Quantidade</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={botForm.quantity}
-                      onChange={(e) => setBotForm((current) => ({ ...current, quantity: e.target.value }))}
-                    />
+                    <input type="number" min="1" max="50" value={botForm.quantity} onChange={(e) => setBotForm((current) => ({ ...current, quantity: e.target.value }))} />
                   </label>
                 </div>
 
@@ -996,29 +606,17 @@ export default function AdminSettings() {
 
             <div className="settings-section">
               <h3>Usuarios de teste humanos</h3>
-              <p className="admin-muted">
-                Se voce ainda quiser usuarios normais para simular cadastro e documentos, pode manter essa criacao separada.
-              </p>
+              <p className="admin-muted">Mantenha separado dos bots, apenas para simulacao e validacao do fluxo.</p>
 
               <form className="settings-form" onSubmit={handleCreateDemoUsers}>
                 <div className="settings-grid-2">
                   <label className="field">
                     <span>Nome base</span>
-                    <input
-                      value={demoForm.base_name}
-                      onChange={(e) => setDemoForm((current) => ({ ...current, base_name: e.target.value }))}
-                      placeholder="Usuario Demo"
-                    />
+                    <input value={demoForm.base_name} onChange={(e) => setDemoForm((current) => ({ ...current, base_name: e.target.value }))} placeholder="Usuario Demo" />
                   </label>
                   <label className="field">
                     <span>Quantidade</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={demoForm.quantity}
-                      onChange={(e) => setDemoForm((current) => ({ ...current, quantity: e.target.value }))}
-                    />
+                    <input type="number" min="1" max="10" value={demoForm.quantity} onChange={(e) => setDemoForm((current) => ({ ...current, quantity: e.target.value }))} />
                   </label>
                 </div>
 
@@ -1058,7 +656,7 @@ export default function AdminSettings() {
           <div className="settings-stack">
             <div className="settings-section">
               <h3>Operacoes rapidas</h3>
-              <p className="admin-muted">Acoes administrativas legitimas para abrir/encerrar um lote e disparar a automacao.</p>
+              <p className="admin-muted">Acoes administrativas legitimas para abrir/encerrar um lote e disparar a automacao geral.</p>
 
               {opsError ? <div className="admin-alert admin-alert-danger">{opsError}</div> : null}
               {opsMessage ? <div className="admin-alert admin-alert-ok">{opsMessage}</div> : null}
@@ -1073,7 +671,6 @@ export default function AdminSettings() {
                       </option>
                     ))}
                   </select>
-                  <small>Use essa lista para acoes manuais do admin.</small>
                 </label>
                 <div className="field">
                   <span>Acoes</span>
@@ -1091,7 +688,7 @@ export default function AdminSettings() {
 
             <div className="settings-section">
               <h3>Executar automacao</h3>
-              <p className="admin-muted">Use isso para testar a automacao sem esperar o Cron do servidor.</p>
+              <p className="admin-muted">Use isso para testar a automacao sem esperar o cron do servidor.</p>
               <div className="admin-row" style={{ gap: 12, flexWrap: "wrap" }}>
                 <button className="admin-btn admin-btn-primary" type="button" disabled={runningCron || loading} onClick={runCronNow}>
                   {runningCron ? "Executando..." : "Executar automacao"}
@@ -1121,9 +718,6 @@ export default function AdminSettings() {
                   </select>
                 </label>
               </div>
-              <div className="admin-alert admin-alert-info">
-                Os dois documentos podem ser exigidos para dar lance. A mensagem do bloqueio foi refinada no front e no backend.
-              </div>
             </div>
 
             <div className="settings-section">
@@ -1131,25 +725,11 @@ export default function AdminSettings() {
               <div className="settings-grid-2">
                 <label className="field">
                   <span>Reenvio de verificacao (por 10 min)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={form.email_verify_max_per_10m}
-                    onChange={(e) => setField("email_verify_max_per_10m", e.target.value)}
-                  />
-                  <small>Use 0 para desativar o limite (nao recomendado).</small>
+                  <input type="number" min="0" max="20" value={form.email_verify_max_per_10m} onChange={(e) => setField("email_verify_max_per_10m", e.target.value)} />
                 </label>
                 <label className="field">
                   <span>Recuperacao de senha (por 10 min)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={form.reset_max_per_10m}
-                    onChange={(e) => setField("reset_max_per_10m", e.target.value)}
-                  />
-                  <small>Use 0 para desativar o limite (nao recomendado).</small>
+                  <input type="number" min="0" max="20" value={form.reset_max_per_10m} onChange={(e) => setField("reset_max_per_10m", e.target.value)} />
                 </label>
               </div>
             </div>
@@ -1165,7 +745,6 @@ export default function AdminSettings() {
               <div className="admin-alert admin-alert-warn">
                 <strong>CORS_ORIGINS</strong> e definido no arquivo <code>.env</code>. Valor atual:
                 <div className="mono">{form.cors_origins || "(vazio)"}</div>
-                Para testar localmente, o backend aceita automaticamente <code>http://localhost:5173</code>.
               </div>
             </div>
 
@@ -1216,7 +795,6 @@ export default function AdminSettings() {
                   <span>Regra</span>
                   <span>Alvo</span>
                   <span>Status</span>
-                  <span>Planejados</span>
                   <span>Criados</span>
                   <span>Motivo</span>
                 </div>
@@ -1226,7 +804,6 @@ export default function AdminSettings() {
                     <span>{run.rule_name || `Regra #${run.rule_id}`}</span>
                     <span>{run.auction_title || `#${run.auction_id || "-"}`}</span>
                     <span>{run.status}</span>
-                    <span>{run.bids_planned}</span>
                     <span>{run.bids_created}</span>
                     <span>{run.reason || "-"}</span>
                   </div>

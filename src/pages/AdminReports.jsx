@@ -41,6 +41,8 @@ export default function AdminReports() {
           <div className="stat-card"><span>Publicados</span><strong>{data.published_auctions}</strong></div>
           <div className="stat-card"><span>Agendados</span><strong>{data.scheduled_auctions}</strong></div>
           <div className="stat-card"><span>Total lances</span><strong>{data.total_bids}</strong></div>
+          <div className="stat-card"><span>Lances automaticos</span><strong>{data.auto_bids}</strong></div>
+          <div className="stat-card"><span>Lances humanos</span><strong>{data.human_bids}</strong></div>
           <div className="stat-card"><span>Total views</span><strong>{data.total_views}</strong></div>
         </div>
       </section>
