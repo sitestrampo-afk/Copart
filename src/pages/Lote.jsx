@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
-import { apiGet, apiGetAuth, apiPost, apiPostAuth } from "../services/api.js";
+import LotCard from "../components/LotCard.jsx";
+import { apiGet, apiPost, apiPostAuth, buildApiUrl } from "../services/api.js";
 import { formatDateTimeBR, parseDateTimeValue } from "../utils/datetime.js";
+
+const streamUrl = buildApiUrl("/api/stream");
 
 function formatMoney(value) {
   const num = Number(value);
@@ -103,12 +106,42 @@ export default function Lote() {
   const [auction, setAuction] = useState(null);
   const [mainImage, setMainImage] = useState("");
   const [amount, setAmount] = useState("");
-  const [documentState, setDocumentState] = useState({ primary: null, residence: null, bid_access_override_at: null });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [tick, setTick] = useState(Date.now());
   const [childLots, setChildLots] = useState([]);
+
+  async function loadAuctionDetails(targetAuctionId) {
+    const data = await apiGet(`/api/auctions/${targetAuctionId}`);
+    return data.data;
+  }
+
+  async function loadChildLotsSnapshot(targetAuctionId) {
+    const response = await apiGet(`/api/auctions?type=lote&parent_id=${targetAuctionId}`);
+    return Array.isArray(response.data) ? response.data : [];
+  }
+
+  function mergeAuctionSnapshot(current, incoming) {
+    if (!current || !incoming) return current || incoming;
+    return { ...current, ...incoming };
+  }
+
+  function mergeAuctionList(prev, next) {
+    if (!Array.isArray(next) || next.length === 0) return prev;
+    const map = new Map();
+    for (const item of prev || []) {
+      if (item && item.id !== undefined && item.id !== null) {
+        map.set(item.id, item);
+      }
+    }
+    for (const item of next) {
+      if (item && item.id !== undefined && item.id !== null) {
+        map.set(item.id, { ...(map.get(item.id) || {}), ...item });
+      }
+    }
+    return Array.from(map.values());
+  }
 
   useEffect(() => {
     let active = true;
@@ -116,10 +149,10 @@ export default function Lote() {
     async function load() {
       setError("");
       try {
-        const data = await apiGet(`/api/auctions/${auctionId}`);
+        const nextAuction = await loadAuctionDetails(auctionId);
         if (!active) return;
-        setAuction(data.data);
-        const imgs = parseImages(data.data);
+        setAuction(nextAuction);
+        const imgs = parseImages(nextAuction);
         setMainImage(imgs[0] || "");
 
         try {
@@ -133,19 +166,6 @@ export default function Lote() {
           // analytics are non-blocking on public page
         }
 
-        if (token) {
-          try {
-            const doc = await apiGetAuth("/api/user/documents", token);
-            if (!active) return;
-            setDocumentState({
-              primary: doc.data?.primary || null,
-              residence: doc.data?.residence || null,
-              bid_access_override_at: doc.data?.bid_access_override_at || null
-            });
-          } catch {
-            // ignore profile doc issues here
-          }
-        }
       } catch (err) {
         if (!active) return;
         setError(err.message || "Erro ao carregar o lote.");
@@ -181,23 +201,16 @@ export default function Lote() {
   const isUpcoming = isPublished && startsAt && startsAt.getTime() > now;
   const isOpen = isPublished && !isUpcoming && (!endsAt || endsAt.getTime() > now) && isStarted;
   const isLeilaoFolder = String(location.pathname || "").startsWith("/leilao/") || String(auction?.listing_type || "").toLowerCase() === "leilao";
-  const hasManualAccess = !!documentState.bid_access_override_at;
-  const primaryStatus = documentState.primary?.status || null;
-  const residenceStatus = documentState.residence?.status || null;
-  const canBid = !!token && isOpen && (hasManualAccess || (primaryStatus === "aprovado" && residenceStatus === "aprovado"));
+  const canBid = !!token && isOpen;
   const bidButtonLabel = !token
     ? isUpcoming
       ? "Em breve"
       : "Entre para dar lance"
-    : !hasManualAccess && primaryStatus !== "aprovado"
-      ? "Documento principal pendente"
-    : !hasManualAccess && residenceStatus !== "aprovado"
-        ? "Comprovante pendente"
-        : isUpcoming
-          ? "Em breve"
-          : submitting
-            ? "Enviando..."
-            : "Enviar lance";
+    : isUpcoming
+      ? "Em breve"
+      : submitting
+        ? "Enviando..."
+        : "Enviar lance";
   const countdownTarget = isUpcoming ? startsAt : endsAt;
   const timeLeftMs = countdownTarget ? countdownTarget.getTime() - now : null;
   const countdown = countdownTarget && timeLeftMs !== null ? formatCountdown(timeLeftMs) : null;
@@ -217,9 +230,9 @@ export default function Lote() {
         return;
       }
       try {
-        const response = await apiGet(`/api/auctions?type=lote&parent_id=${auctionId}`);
+        const nextLots = await loadChildLotsSnapshot(auctionId);
         if (!active) return;
-        setChildLots(Array.isArray(response.data) ? response.data : []);
+        setChildLots(nextLots);
       } catch {
         if (!active) return;
         setChildLots([]);
@@ -231,9 +244,48 @@ export default function Lote() {
     };
   }, [auction, auctionId, isLeilaoFolder]);
 
+  useEffect(() => {
+    const source = new EventSource(streamUrl);
+    source.addEventListener("update", (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const auctionsPayload = Array.isArray(payload.auctions) ? payload.auctions : [];
+        if (auctionsPayload.length === 0) return;
+
+        const currentSnapshot = auctionsPayload.find((item) => Number(item.id) === auctionId);
+        if (currentSnapshot) {
+          setAuction((prev) => mergeAuctionSnapshot(prev, currentSnapshot));
+        }
+
+        const relevantChildren = auctionsPayload.filter((item) => Number(item.parent_auction_id || 0) === auctionId);
+        if (relevantChildren.length > 0) {
+          setChildLots((prev) => mergeAuctionList(prev, relevantChildren));
+        }
+
+        const hasCurrentBidUpdate = Array.isArray(payload.bids)
+          && payload.bids.some((item) => Number(item.auction_id) === auctionId);
+        if (hasCurrentBidUpdate && !isLeilaoFolder) {
+          refreshAuction().catch(() => {});
+        }
+
+        const hasChildBidUpdate = isLeilaoFolder
+          && Array.isArray(payload.bids)
+          && payload.bids.some((item) => Number(item.auction_id) !== auctionId);
+        if (hasChildBidUpdate) {
+          loadChildLotsSnapshot(auctionId)
+            .then((nextLots) => setChildLots(nextLots))
+            .catch(() => {});
+        }
+      } catch {
+        // ignore
+      }
+    });
+    return () => source.close();
+  }, [auctionId, isLeilaoFolder]);
+
   async function refreshAuction() {
-    const refreshed = await apiGet(`/api/auctions/${auctionId}`);
-    setAuction(refreshed.data);
+    const refreshed = await loadAuctionDetails(auctionId);
+    setAuction(refreshed);
   }
 
   async function submitBid() {
@@ -245,14 +297,6 @@ export default function Lote() {
     setSuccess("");
     if (!token) {
       setError("Faca login para dar lance.");
-      return;
-    }
-    if (!hasManualAccess && primaryStatus !== "aprovado") {
-      setError("Documento principal pendente. Envie ou reenvie no perfil.");
-      return;
-    }
-    if (!hasManualAccess && residenceStatus !== "aprovado") {
-      setError("Comprovante de residencia pendente. Envie ou reenvie no perfil.");
       return;
     }
     const numeric = parseCurrencyBR(amount);
@@ -328,15 +372,51 @@ export default function Lote() {
 
               <div className="lot-grid">
                 <div className="lot-left">
-                  <div className="lot-gallery">
-                    <div className="lot-image-wrap">
-                      {mainImage ? <img className="lot-image" src={mainImage} alt={auction.title || "Imagem do leilao"} /> : <div className="lot-image empty" />}
+                  <section className="folder-hero-card">
+                    <div className="folder-hero-media">
+                      <div className="lot-image-wrap folder-hero-image-wrap">
+                        {mainImage ? <img className="lot-image folder-hero-image" src={mainImage} alt={auction.title || "Imagem do leilao"} /> : <div className="lot-image empty folder-hero-image" />}
+                      </div>
+                      <div className="folder-hero-overlay">
+                        <div className="folder-hero-overlay-top">
+                          <span className="folder-hero-badge">{auction.category_name || "Evento"}</span>
+                          <span className="folder-hero-badge folder-hero-badge-contrast">{childLots.length} lotes</span>
+                        </div>
+                        <div className="folder-hero-overlay-bottom">
+                          <div>
+                            <span>Status atual</span>
+                            <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                          </div>
+                          <div>
+                            <span>Views do evento</span>
+                            <strong>{auction.views_count || 0}</strong>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <section className="lot-info-box" aria-label="Informacoes do leilao">
+                    <div className="folder-hero-info">
+                      <div className="folder-hero-copy">
+                        <span className="folder-hero-kicker">Pasta do leilao</span>
+                        <h2>Todos os lotes deste evento em uma unica visao</h2>
+                        <p>Use esta pasta para navegar pelos lotes ativos, acompanhar o status geral do evento e abrir rapidamente cada item.</p>
+                      </div>
+                      <div className="folder-hero-stats">
+                        <div>
+                          <span>Categoria</span>
+                          <strong>{auction.category_name || "-"}</strong>
+                        </div>
+                        <div>
+                          <span>Lotes</span>
+                          <strong>{childLots.length} disponiveis</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="lot-info-box lot-folder-info-box" aria-label="Informacoes do leilao">
                     <div className="lot-info-head">
-                      <h3>Informacoes</h3>
+                      <h3>Informacoes da pasta</h3>
                       <span className="lot-info-lot">Pasta</span>
                     </div>
                     <div className="lot-info-body">
@@ -361,8 +441,9 @@ export default function Lote() {
                 </div>
 
                 <aside className="lot-side" aria-label="Resumo do leilao">
-                  <div className="lot-folder-summary">
+                  <div className="lot-folder-summary lot-folder-summary-enhanced">
                     <div className="lot-time-title">PASTA DO LEILAO</div>
+                    <p className="lot-folder-summary-copy">Resumo rapido para acompanhar esta pasta sem precisar abrir lote por lote.</p>
                     <div className="lot-folder-summary-grid">
                       <div>
                         <span>Endereço</span>
@@ -372,7 +453,18 @@ export default function Lote() {
                         <span>Lotes disponíveis</span>
                         <strong>{childLots.length}</strong>
                       </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{formatStatusLabel(auction.auction_status)}</strong>
+                      </div>
+                      <div>
+                        <span>Views</span>
+                        <strong>{auction.views_count || 0}</strong>
+                      </div>
                     </div>
+                    <Link className="folder-summary-action" to="/categorias">
+                      Voltar para os resultados
+                    </Link>
                   </div>
                 </aside>
               </div>
@@ -383,48 +475,9 @@ export default function Lote() {
                 </div>
                 {childLots.length > 0 ? (
                   <div className="lot-folder-grid">
-                    {childLots.map((child, index) => {
-                      const childImage = parseImages(child)[0] || child.image_url || (index % 2 ? "" : "");
-                      const childStatus = String(child.auction_status || "").toLowerCase();
-                      const childRoute = `/lote/${child.id}`;
-                      const childLabel =
-                        childStatus === "agendado" ? "Em breve" : childStatus === "encerrado" ? "Encerrado" : "Abrir lote";
+                    {childLots.map((child) => {
                       return (
-                        <article key={child.id} className="auction-card folder-lot-card">
-                          <Link className="auction-image-link" to={childRoute}>
-                            <div
-                              className="auction-image"
-                              style={{ backgroundImage: childImage ? `url(${childImage})` : "none" }}
-                            />
-                          </Link>
-                          <div className="auction-body">
-                            <h3>
-                              <Link to={childRoute}>{child.title}</Link>
-                            </h3>
-                            <p>
-                              {child.lot_number ? `Lote ${child.lot_number}` : "Lote"} {child.location ? `| ${child.location}` : ""}
-                            </p>
-                            <div className="auction-bids">
-                              <div>
-                                <span>Inicio</span>
-                                <strong>{formatDateTimeBR(child.starts_at)}</strong>
-                              </div>
-                              <div>
-                                <span>Termino</span>
-                                <strong>{formatDateTimeBR(child.ends_at)}</strong>
-                              </div>
-                              <div>
-                                <span>Status</span>
-                                <strong>{formatStatusLabel(child.auction_status)}</strong>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="auction-footer">
-                            <Link className="cta" to={childRoute}>
-                              {childLabel}
-                            </Link>
-                          </div>
-                        </article>
+                        <LotCard key={child.id} auction={child} />
                       );
                     })}
                   </div>
@@ -555,16 +608,6 @@ export default function Lote() {
                       {!token && (
                         <div className="helper-text">
                           <Link to="/login">Entre</Link> para participar do leilao.
-                        </div>
-                      )}
-                      {token && primaryStatus !== "aprovado" && (
-                        <div className="helper-text">
-                          Documento principal pendente. Envie ou reenvie no <Link to="/perfil">perfil</Link>.
-                        </div>
-                      )}
-                      {token && primaryStatus === "aprovado" && residenceStatus !== "aprovado" && (
-                        <div className="helper-text">
-                          Comprovante de residencia pendente. Envie ou reenvie no <Link to="/perfil">perfil</Link>.
                         </div>
                       )}
                     </div>

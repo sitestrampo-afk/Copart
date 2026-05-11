@@ -1,11 +1,14 @@
 // Production frontend on Vercel must always talk to the Hostinger backend.
-const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public";
+// Use the explicit front controller to avoid relying on rewrite behavior that
+// can vary between shared-hosting environments.
+const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public/index.php";
 
 function normalizeBaseUrl(value) {
   const trimmed = String(value || "").trim().replace(/\/+$/, "");
   if (!trimmed) return DEFAULT_PROD_API_URL;
   if (/copartatendimento\.com/i.test(trimmed)) return DEFAULT_PROD_API_URL;
   if (/localhost\/Copart\/Backend\/public/i.test(trimmed)) return DEFAULT_PROD_API_URL;
+  if (/hostingersite\.com\/Backend\/public$/i.test(trimmed)) return `${trimmed}/index.php`;
   return trimmed;
 }
 
@@ -13,8 +16,15 @@ export const apiBaseUrl = normalizeBaseUrl(
   import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Copart/Backend/public/index.php")
 );
 
+const apiBaseDirectoryUrl = apiBaseUrl.replace(/\/index\.php$/i, "");
+
+function composeApiUrl(base, path) {
+  const safePath = String(path || "").startsWith("/") ? String(path || "") : `/${String(path || "")}`;
+  return `${base}${safePath}`;
+}
+
 export function buildApiUrl(path) {
-  return `${apiBaseUrl}${path}`;
+  return composeApiUrl(apiBaseDirectoryUrl, path);
 }
 
 const debugEnabled = String(import.meta.env.VITE_DEBUG || "true") === "true";
@@ -77,9 +87,22 @@ async function parseResponse(response) {
   return data;
 }
 
+async function fetchWithApiFallback(path, options = {}) {
+  const primaryUrl = composeApiUrl(apiBaseUrl, path);
+  debugLog(options.method || "GET", primaryUrl, options.body || "");
+  let response = await fetch(primaryUrl, options);
+  if (response.status !== 404 || !/\/index\.php$/i.test(apiBaseUrl)) {
+    return response;
+  }
+
+  const fallbackUrl = composeApiUrl(apiBaseDirectoryUrl, path);
+  debugLog("Retry", fallbackUrl);
+  response = await fetch(fallbackUrl, options);
+  return response;
+}
+
 export async function apiGet(path) {
-  debugLog("GET", `${apiBaseUrl}${path}`);
-  const response = await fetch(`${apiBaseUrl}${path}`);
+  const response = await fetchWithApiFallback(path);
   return parseResponse(response);
 }
 
@@ -89,8 +112,8 @@ export async function apiGetAuth(path, token) {
     debugLog("GET", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("GET", `${apiBaseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  debugLog("GET", composeApiUrl(apiBaseUrl, path), "Bearer", safeToken.slice(0, 8) + "...");
+  const response = await fetchWithApiFallback(path, {
     headers: {
       Authorization: `Bearer ${safeToken}`,
       "X-Auth-Token": safeToken
@@ -100,9 +123,8 @@ export async function apiGetAuth(path, token) {
 }
 
 export async function apiPost(path, body) {
-  debugLog("POST", `${apiBaseUrl}${path}`, body);
   const payload = toFormBody(body);
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetchWithApiFallback(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -118,9 +140,8 @@ export async function apiPostAuth(path, body, token) {
     debugLog("POST", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("POST", `${apiBaseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
   const payload = toFormBody(body);
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetchWithApiFallback(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -138,9 +159,8 @@ export async function apiPutAuth(path, body, token) {
     debugLog("PUT", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("PUT", `${apiBaseUrl}${path}`, body, "Bearer", safeToken.slice(0, 8) + "...");
   const payload = toFormBody(body);
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetchWithApiFallback(path, {
     method: "PUT",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -158,8 +178,8 @@ export async function apiDeleteAuth(path, token) {
     debugLog("DELETE", `${apiBaseUrl}${path}`, "TOKEN AUSENTE");
     throw new Error("Token ausente");
   }
-  debugLog("DELETE", `${apiBaseUrl}${path}`, "Bearer", safeToken.slice(0, 8) + "...");
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  debugLog("DELETE", composeApiUrl(apiBaseUrl, path), "Bearer", safeToken.slice(0, 8) + "...");
+  const response = await fetchWithApiFallback(path, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${safeToken}`,
@@ -175,7 +195,7 @@ export async function apiUpload(file, token) {
   const body = new FormData();
   body.append("file", file);
   if (safeToken) body.append("token", safeToken);
-  const response = await fetch(`${apiBaseUrl}/api/uploads`, {
+  const response = await fetchWithApiFallback("/api/uploads", {
     method: "POST",
     headers: safeToken
       ? { Authorization: `Bearer ${safeToken}`, "X-Auth-Token": safeToken }
@@ -199,7 +219,7 @@ export async function apiUploadUser(file, token) {
   const body = new FormData();
   body.append("file", file);
   if (safeToken) body.append("token", safeToken);
-  const response = await fetch(`${apiBaseUrl}/api/user/uploads`, {
+  const response = await fetchWithApiFallback("/api/user/uploads", {
     method: "POST",
     headers: safeToken
       ? { Authorization: `Bearer ${safeToken}`, "X-Auth-Token": safeToken }

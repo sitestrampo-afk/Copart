@@ -22,9 +22,9 @@ function getAuctionImage(auction) {
 
 function formatStatusLabel(status) {
   const normalized = String(status || "").toLowerCase();
-  if (normalized === "agendado") return "Em breve";
-  if (normalized === "aberto") return "Recebendo lances";
-  if (normalized === "encerrado") return "Encerrado";
+  if (normalized === "agendado") return "EM BREVE";
+  if (normalized === "aberto") return "RECEBENDO LANCES";
+  if (normalized === "encerrado") return "ENCERRADO";
   return status || "-";
 }
 
@@ -44,30 +44,48 @@ export default function AuctionGrid({ auctions = [] }) {
         {eventFolders.map((auction) => {
           const imageUrl = getAuctionImage(auction);
           const lotsCount = Number(auction.child_lots_count || 0);
+          const locationLabel = auction.location || "Fixo no cadastro";
+          const categoryLabel = auction.category_name || "Leilao";
+
           return (
-            <article key={auction.id} className="auction-card category-card folder-card">
-              <Link to={`/leilao/${auction.id}`} className="auction-image-link">
-                <div className="auction-image" style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : "none" }} />
+            <article key={auction.id} className="folder-showcase-card">
+              <Link to={`/leilao/${auction.id}`} className="folder-showcase-image-link">
+                <div className="folder-showcase-image" style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : "none" }} />
+                <div className="folder-showcase-overlay">
+                  <span className="folder-showcase-badge">{categoryLabel}</span>
+                  <span className="folder-showcase-lots">{lotsCount} lotes</span>
+                </div>
               </Link>
-              <div className="auction-body">
-                <h3>
+
+              <div className="folder-showcase-body">
+                <div className="folder-showcase-head">
                   <Link to={`/leilao/${auction.id}`}>{auction.title}</Link>
-                </h3>
-                <p>{auction.location || auction.category_name || ""}</p>
-                <div className="auction-bids folder-meta">
-                  <div>
-                    <span>Endereço</span>
-                    <strong>{auction.location || "Fixo no cadastro"}</strong>
+                  <p>Entre na pasta e acompanhe os lotes vinculados com status e imagem de capa.</p>
+                </div>
+
+                <div className="folder-showcase-meta">
+                  <div className="folder-showcase-meta-card">
+                    <span>Endereco</span>
+                    <strong>{locationLabel}</strong>
                   </div>
-                  <div>
+                  <div className="folder-showcase-meta-card">
                     <span>Status</span>
                     <strong>{formatStatusLabel(auction.auction_status)}</strong>
                   </div>
+                  <div className="folder-showcase-meta-card">
+                    <span>Categoria</span>
+                    <strong>{categoryLabel}</strong>
+                  </div>
+                  <div className="folder-showcase-meta-card">
+                    <span>Lotes disponiveis</span>
+                    <strong>{lotsCount}</strong>
+                  </div>
                 </div>
               </div>
-              <div className="auction-footer folder-footer">
-                <Link className="cta folder-cta" to={`/leilao/${auction.id}`}>
-                  {lotsCount} LOTES DISPONIVEIS
+
+              <div className="folder-showcase-footer">
+                <Link className="folder-showcase-button" to={`/leilao/${auction.id}`}>
+                  Abrir pasta do evento
                 </Link>
               </div>
             </article>

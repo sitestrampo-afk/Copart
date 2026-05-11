@@ -890,13 +890,13 @@ export default function AdminAuctions() {
                 <span>Status</span>
                 <span>Nome</span>
                 <span>Mais Fotos</span>
-                <span>N° do Lote</span>
+                <span>No. do Lote</span>
                 <span>Foto</span>
                 <span>Leiloes</span>
                 <span>Lance Atual</span>
                 <span>Arrematante</span>
-                <span>Data (1ª Praça)</span>
-                <span>Data (2ª Praça)</span>
+                <span>Data (1a Praca)</span>
+                <span>Data (2a Praca)</span>
                 <span>Status do Leilao</span>
                 <span>Acoes</span>
               </div>
@@ -992,11 +992,11 @@ export default function AdminAuctions() {
                     </span>
                     <span>
                       <strong>{formatDate(item.starts_at)}</strong>
-                      <small>1ª praça</small>
+                      <small>1a praca</small>
                     </span>
                     <span>
                       <strong>{formatDate(item.ends_at)}</strong>
-                      <small>2ª praça</small>
+                      <small>2a praca</small>
                     </span>
                     <span>
                       <span className={`status-pill ${item.auction_status || ""}`}>{getStatusLabel(item)}</span>

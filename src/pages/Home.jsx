@@ -6,7 +6,7 @@ import ValueProps from "../components/ValueProps.jsx";
 import Showcase from "../components/Showcase.jsx";
 import Partners from "../components/Partners.jsx";
 import Footer from "../components/Footer.jsx";
-import { apiGet, apiGetAuth, apiPostAuth, buildApiUrl } from "../services/api.js";
+import { apiGet, apiPostAuth, buildApiUrl } from "../services/api.js";
 
 const streamUrl = buildApiUrl("/api/stream");
 
@@ -16,14 +16,6 @@ export default function Home() {
   const [bidAmount, setBidAmount] = useState("");
   const [bidError, setBidError] = useState("");
   const [bidMessage, setBidMessage] = useState("");
-  const [documentState, setDocumentState] = useState({ primary: null, residence: null, bid_access_override_at: null });
-
-  const hasManualAccess = !!documentState.bid_access_override_at;
-  const canBid = hasManualAccess || (documentState.primary?.status === "aprovado" && documentState.residence?.status === "aprovado");
-  const missingDocs = [];
-  if (!hasManualAccess && documentState.primary?.status !== "aprovado") missingDocs.push("documento principal");
-  if (!hasManualAccess && documentState.residence?.status !== "aprovado") missingDocs.push("comprovante de residencia");
-  const bidButtonLabel = canBid ? "Enviar lance" : "Documentos pendentes";
 
   function mergeAuctions(prev, next) {
     if (!Array.isArray(next) || next.length === 0) return prev;
@@ -70,13 +62,7 @@ export default function Home() {
       return value;
     })();
     if (!token) {
-      setBidError("Faça login para dar lances.");
-      return;
-    }
-    if (!canBid) {
-      setBidError(
-        missingDocs.length ? `Aguardando aprovacao do(s): ${missingDocs.join(" e ")}.` : "Envie seus documentos e aguarde aprovacao para dar lances."
-      );
+      setBidError("Faca login para dar lances.");
       return;
     }
     try {
@@ -87,38 +73,12 @@ export default function Home() {
       const msg = err.message || "Erro ao enviar lance.";
       if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
         localStorage.removeItem("userToken");
-        setBidError("Sua sessão expirou. Faça login novamente.");
+        setBidError("Sua sessao expirou. Faca login novamente.");
         return;
       }
       setBidError(msg);
     }
   }
-
-  useEffect(() => {
-    let active = true;
-    async function loadDocStatus() {
-      const token = localStorage.getItem("userToken");
-      if (!selected || !token) {
-        setDocumentState({ primary: null, residence: null, bid_access_override_at: null });
-        return;
-      }
-      try {
-        const doc = await apiGetAuth("/api/user/documents", token);
-        if (!active) return;
-        setDocumentState({
-          primary: doc.data?.primary || null,
-          residence: doc.data?.residence || null,
-          bid_access_override_at: doc.data?.bid_access_override_at || null
-        });
-      } catch {
-        if (active) setDocumentState({ primary: null, residence: null, bid_access_override_at: null });
-      }
-    }
-    loadDocStatus();
-    return () => {
-      active = false;
-    };
-  }, [selected]);
 
   return (
     <div>
@@ -143,18 +103,13 @@ export default function Home() {
                 onChange={(e) => setBidAmount(e.target.value)}
                 required
               />
-              <button className="cta" type="submit" disabled={!canBid}>
-                {bidButtonLabel}
+              <button className="cta" type="submit">
+                Enviar lance
               </button>
               <button className="ghost" type="button" onClick={() => setSelected(null)}>
                 Cancelar
               </button>
             </form>
-            {!canBid && (
-              <div className="alert warning">
-                {missingDocs.length ? `Aguardando aprovacao do(s): ${missingDocs.join(" e ")}.` : "Envie seus documentos e aguarde aprovacao para dar lances."}
-              </div>
-            )}
             {bidError && <div className="alert error">{bidError}</div>}
             {bidMessage && <div className="alert success">{bidMessage}</div>}
           </div>
