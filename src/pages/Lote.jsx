@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import LotCard from "../components/LotCard.jsx";
 import { apiGet, apiPost, apiPostAuth, buildApiUrl } from "../services/api.js";
-import { formatDateTimeBR, parseDateTimeValue } from "../utils/datetime.js";
+import { formatDateBR, parseDateTimeValue } from "../utils/datetime.js";
 
 const streamUrl = buildApiUrl("/api/stream");
 
@@ -547,11 +547,11 @@ export default function Lote() {
                     <div className="lot-info-body">
                       <div>
                         <span>Inicio</span>
-                        <strong>{formatDateTimeBR(auction.starts_at)}</strong>
+                        <strong>{formatDateBR(auction.starts_at)}</strong>
                       </div>
                       <div>
                         <span>Termino</span>
-                        <strong>{formatDateTimeBR(auction.ends_at)}</strong>
+                        <strong>{formatDateBR(auction.ends_at)}</strong>
                       </div>
                       <div>
                         <span>Lance inicial</span>
@@ -648,7 +648,7 @@ export default function Lote() {
                     ) : null}
                     <div className="lot-time-meta">
                       <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
-                      <strong>{formatDateTimeBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
+                      <strong>{formatDateBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
                     </div>
                   </div>
 
@@ -739,13 +739,13 @@ export default function Lote() {
                     <div>
                       <span>Usuario</span>
                       <span>Valor</span>
-                      <span>Horario</span>
+                      <span>Data</span>
                     </div>
                     {recentBids.map((bid) => (
                       <div key={bid.id}>
                         <span>{bid.user_name}</span>
                         <span>{formatMoney(bid.amount)}</span>
-                        <span>{formatDateTimeBR(bid.created_at)}</span>
+                        <span>{formatDateBR(bid.created_at)}</span>
                       </div>
                     ))}
                   </div>

@@ -528,6 +528,7 @@ export default function AdminSettings() {
           <form className="settings-form" onSubmit={handleRescheduleFamily}>
             {opsError ? <div className="admin-alert admin-alert-danger">{opsError}</div> : null}
             {opsMessage ? <div className="admin-alert admin-alert-ok">{opsMessage}</div> : null}
+            <p className="admin-muted">Os lotes sao ordenados pelo numero do lote. O fim informado vale para o Lote 1; os proximos recebem o mesmo prazo com o intervalo aplicado em sequencia.</p>
             <div className="settings-grid-2">
               <label className="field">
                 <span>Pasta do leilao</span>
