@@ -1,19 +1,19 @@
 // Production frontend on Vercel must always talk to the Hostinger backend.
-// Use the explicit front controller to avoid relying on rewrite behavior that
-// can vary between shared-hosting environments.
-const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public/index.php";
+// Prefer the clean `/api/...` path because the shared-hosting browser challenge
+// can intercept `/index.php/api/...` requests and break CORS before JS can retry.
+const DEFAULT_PROD_API_URL = "https://orange-bison-917444.hostingersite.com/Backend/public";
 
 function normalizeBaseUrl(value) {
   const trimmed = String(value || "").trim().replace(/\/+$/, "");
   if (!trimmed) return DEFAULT_PROD_API_URL;
   if (/copartatendimento\.com/i.test(trimmed)) return DEFAULT_PROD_API_URL;
-  if (/localhost\/Copart\/Backend\/public/i.test(trimmed)) return DEFAULT_PROD_API_URL;
-  if (/hostingersite\.com\/Backend\/public$/i.test(trimmed)) return `${trimmed}/index.php`;
+  if (/localhost\/Copart\/Backend\/public/i.test(trimmed)) return "http://localhost/Copart/Backend/public/index.php";
+  if (/localhost\/Favareto\/Backend\/public/i.test(trimmed)) return "http://localhost/Favareto/Backend/public/index.php";
   return trimmed;
 }
 
 export const apiBaseUrl = normalizeBaseUrl(
-  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Copart/Backend/public/index.php")
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_PROD_API_URL : "http://localhost/Favareto/Backend/public/index.php")
 );
 
 const apiBaseDirectoryUrl = apiBaseUrl.replace(/\/index\.php$/i, "");
@@ -114,14 +114,21 @@ async function parseResponse(response) {
 }
 
 async function fetchWithApiFallback(path, options = {}) {
-  const primaryUrl = composeApiUrl(apiBaseUrl, path);
+  const prefersFrontController = /\/index\.php$/i.test(apiBaseUrl);
+  const primaryBase = prefersFrontController ? apiBaseDirectoryUrl : apiBaseUrl;
+  const fallbackBase = prefersFrontController ? apiBaseUrl : `${apiBaseUrl.replace(/\/+$/, "")}/index.php`;
+
+  const primaryUrl = composeApiUrl(primaryBase, path);
   debugLog(options.method || "GET", primaryUrl, options.body || "");
   let response = await fetch(primaryUrl, options);
-  if (response.status !== 404 || !/\/index\.php$/i.test(apiBaseUrl)) {
+  if (response.ok) {
+    return response;
+  }
+  if (response.status !== 404 && response.status !== 403) {
     return response;
   }
 
-  const fallbackUrl = composeApiUrl(apiBaseDirectoryUrl, path);
+  const fallbackUrl = composeApiUrl(fallbackBase, path);
   debugLog("Retry", fallbackUrl);
   response = await fetch(fallbackUrl, options);
   return response;
