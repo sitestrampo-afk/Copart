@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import LotCard from "../components/LotCard.jsx";
-import { apiGet, apiPost, apiPostAuth, buildApiUrl } from "../services/api.js";
+import { apiGet, apiPost, apiPostAuth, buildApiUrl, normalizeAssetUrl } from "../services/api.js";
 import { formatDateBR, parseDateTimeValue } from "../utils/datetime.js";
 
 const streamUrl = buildApiUrl("/api/stream");
@@ -16,11 +16,11 @@ function formatMoney(value) {
 
 function parseImages(auction) {
   const list = [];
-  if (auction?.image_url) list.push(auction.image_url);
+  if (auction?.image_url) list.push(normalizeAssetUrl(auction.image_url));
   const fromArray = Array.isArray(auction?.images) ? auction.images : null;
   if (fromArray) {
     fromArray.forEach((item) => {
-      if (typeof item === "string" && item.trim()) list.push(item.trim());
+      if (typeof item === "string" && item.trim()) list.push(normalizeAssetUrl(item.trim()));
     });
   }
   if (typeof auction?.images_json === "string" && auction.images_json.trim()) {
@@ -28,7 +28,7 @@ function parseImages(auction) {
       const parsed = JSON.parse(auction.images_json);
       if (Array.isArray(parsed)) {
         parsed.forEach((item) => {
-          if (typeof item === "string" && item.trim()) list.push(item.trim());
+          if (typeof item === "string" && item.trim()) list.push(normalizeAssetUrl(item.trim()));
         });
       }
     } catch {

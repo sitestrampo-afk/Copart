@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { normalizeAssetUrl } from "../services/api.js";
 
 function formatMoney(value) {
   const num = Number(value);
@@ -20,17 +21,17 @@ function formatDateTimeCompact(value) {
 }
 
 function getAuctionImage(auction) {
-  if (auction?.image_url) return auction.image_url;
+  if (auction?.image_url) return normalizeAssetUrl(auction.image_url);
   if (Array.isArray(auction?.images) && auction.images.length > 0) {
     const first = auction.images.find((item) => typeof item === "string" && item.trim());
-    if (first) return first;
+    if (first) return normalizeAssetUrl(first);
   }
   if (typeof auction?.images_json === "string" && auction.images_json.trim()) {
     try {
       const parsed = JSON.parse(auction.images_json);
       if (Array.isArray(parsed)) {
         const first = parsed.find((item) => typeof item === "string" && item.trim());
-        if (first) return first;
+        if (first) return normalizeAssetUrl(first);
       }
     } catch {
       // ignore malformed payloads

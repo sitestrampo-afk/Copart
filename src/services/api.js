@@ -27,6 +27,32 @@ export function buildApiUrl(path) {
   return composeApiUrl(apiBaseDirectoryUrl, path);
 }
 
+export function normalizeAssetUrl(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  if (/^(data:|blob:)/i.test(trimmed)) return trimmed;
+
+  const buildPublicFileUrl = (relativePath) =>
+    buildApiUrl(`/api/public-file?path=${encodeURIComponent(String(relativePath || "").replace(/^\/+/, ""))}`);
+
+  if (/^(uploads\/|Backend\/public\/uploads\/)/i.test(trimmed)) {
+    return buildPublicFileUrl(trimmed.replace(/^Backend\/public\//i, ""));
+  }
+
+  try {
+    const parsed = new URL(trimmed, apiBaseDirectoryUrl + "/");
+    const marker = "/uploads/";
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex >= 0) {
+      const relativePath = parsed.pathname.slice(markerIndex + 1);
+      return buildPublicFileUrl(relativePath);
+    }
+    return parsed.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 const debugEnabled = String(import.meta.env.VITE_DEBUG || "true") === "true";
 
 function debugLog(...args) {

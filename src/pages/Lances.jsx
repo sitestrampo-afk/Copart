@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
-import { apiGetAuth } from "../services/api.js";
+import { apiGetAuth, normalizeAssetUrl } from "../services/api.js";
 
 export default function Lances() {
   const token = (() => {
@@ -121,7 +121,7 @@ export default function Lances() {
                         <div className="bids-auction">
                           <div
                             className="bids-thumb"
-                            style={{ backgroundImage: bid.image_url ? `url(${bid.image_url})` : undefined }}
+                            style={{ backgroundImage: bid.image_url ? `url(${normalizeAssetUrl(bid.image_url)})` : undefined }}
                           />
                           <div>
                             <strong>{bid.title}</strong>
