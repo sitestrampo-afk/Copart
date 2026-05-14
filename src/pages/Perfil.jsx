@@ -30,7 +30,7 @@ const emptyProfile = {
 function formatDocStatus(status) {
   if (status === "aprovado") return "Aprovado";
   if (status === "rejeitado") return "Rejeitado";
-  if (status === "pendente") return "Em analise";
+  if (status === "pendente") return "Em análise";
   return "Sem envio";
 }
 
@@ -99,7 +99,7 @@ export default function Perfil() {
         const msg = err.message || "Erro ao carregar perfil.";
         if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
           localStorage.removeItem("userToken");
-          setStatus({ type: "error", message: "Sua sessao expirou. Faca login novamente." });
+          setStatus({ type: "error", message: "Sua sessão expirou. Faça login novamente." });
           return;
         }
         setStatus({ type: "error", message: msg });
@@ -149,10 +149,10 @@ export default function Perfil() {
       if (data.data?.name) localStorage.setItem("userName", data.data.name);
       if (data.data?.email) localStorage.setItem("userEmail", data.data.email);
     } catch (err) {
-      const msg = err.message || "Nao foi possivel atualizar.";
+      const msg = err.message || "Não foi possível atualizar.";
       if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
         localStorage.removeItem("userToken");
-        setStatus({ type: "error", message: "Sua sessao expirou. Faca login novamente." });
+        setStatus({ type: "error", message: "Sua sessão expirou. Faça login novamente." });
         return;
       }
       setStatus({ type: "error", message: msg });
@@ -164,7 +164,7 @@ export default function Perfil() {
     setDocStatus({ type: "", message: "" });
 
     if (!canSendPrimary) {
-      setDocStatus({ type: "error", message: "Seu documento principal ja foi aprovado ou esta em analise." });
+      setDocStatus({ type: "error", message: "Seu documento principal já foi aprovado ou está em análise." });
       return;
     }
     if (!docFront || !docBack) {
@@ -187,12 +187,12 @@ export default function Perfil() {
       await refreshDocuments();
       setDocFront(null);
       setDocBack(null);
-      setDocStatus({ type: "success", message: "Documento enviado para analise." });
+      setDocStatus({ type: "success", message: "Documento enviado para análise." });
     } catch (err) {
       const msg = err.message || "Falha ao enviar documento.";
       if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
         localStorage.removeItem("userToken");
-        setDocStatus({ type: "error", message: "Sua sessao expirou. Faca login novamente." });
+        setDocStatus({ type: "error", message: "Sua sessão expirou. Faça login novamente." });
         return;
       }
       setDocStatus({ type: "error", message: msg });
@@ -204,11 +204,11 @@ export default function Perfil() {
     setResidenceStatus({ type: "", message: "" });
 
     if (!canSendResidence) {
-      setResidenceStatus({ type: "error", message: "Seu comprovante ja foi aprovado ou esta em analise." });
+      setResidenceStatus({ type: "error", message: "Seu comprovante já foi aprovado ou está em análise." });
       return;
     }
     if (!residenceFile) {
-      setResidenceStatus({ type: "error", message: "Envie o comprovante de residencia." });
+      setResidenceStatus({ type: "error", message: "Envie o comprovante de residência." });
       return;
     }
 
@@ -225,12 +225,12 @@ export default function Perfil() {
       );
       await refreshDocuments();
       setResidenceFile(null);
-      setResidenceStatus({ type: "success", message: "Comprovante enviado para analise." });
+      setResidenceStatus({ type: "success", message: "Comprovante enviado para análise." });
     } catch (err) {
       const msg = err.message || "Falha ao enviar comprovante.";
       if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
         localStorage.removeItem("userToken");
-        setResidenceStatus({ type: "error", message: "Sua sessao expirou. Faca login novamente." });
+        setResidenceStatus({ type: "error", message: "Sua sessão expirou. Faça login novamente." });
         return;
       }
       setResidenceStatus({ type: "error", message: msg });
@@ -243,12 +243,12 @@ export default function Perfil() {
       <main className="user-page">
         <div className="user-header">
           <h1>Meu perfil</h1>
-          <p>Gerencie seus dados e preferencias da conta.</p>
+          <p>Gerencie seus dados e preferências da conta.</p>
         </div>
 
         {!token && (
           <div className="user-empty">
-            <h2>Voce precisa entrar</h2>
+            <h2>Você precisa entrar</h2>
             <p>Acesse sua conta para ver e atualizar seus dados.</p>
             <Link className="cta" to="/login">Ir para login</Link>
           </div>
@@ -267,7 +267,7 @@ export default function Perfil() {
                 <header>
                   <h2>Resumo</h2>
                   <span className="profile-badge">
-                    {profile.type === "pj" ? "Pessoa Juridica" : "Pessoa Fisica"}
+                    {profile.type === "pj" ? "Pessoa Jurídica" : "Pessoa Física"}
                   </span>
                 </header>
                 {loading ? (
@@ -283,7 +283,7 @@ export default function Perfil() {
                       <strong>{profile.email || "-"}</strong>
                     </div>
                     <div>
-                      <span>Usuario</span>
+                      <span>Usuário</span>
                       <strong>{profile.username || "-"}</strong>
                     </div>
                     <div>
@@ -292,7 +292,7 @@ export default function Perfil() {
                     </div>
                     <div>
                       <span>Status da conta</span>
-                      <strong>{profile.email_verified_at ? "Verificado" : "Nao verificado"}</strong>
+                      <strong>{profile.email_verified_at ? "Verificado" : "Não verificado"}</strong>
                     </div>
                     <div>
                       <span>Cadastro</span>
@@ -310,7 +310,7 @@ export default function Perfil() {
 
                 {manualBidAccess && (
                   <div className="doc-locked-note success-box">
-                    Sua conta foi liberada manualmente pelo admin para participar dos lances.
+                    Sua conta foi liberada manualmente pelo administrador para participar dos lances.
                   </div>
                 )}
 
@@ -353,11 +353,11 @@ export default function Perfil() {
 
                     {primaryDocument?.status === "aprovado" ? (
                       <div className="doc-locked-note success-box">
-                        Seu documento principal ja foi aprovado. Se precisar reenviar, o admin deve rejeitar ou solicitar novo envio.
+                        Seu documento principal já foi aprovado. Se precisar reenviar, o administrador deve rejeitar ou solicitar novo envio.
                       </div>
                     ) : primaryDocument?.status === "pendente" ? (
                       <div className="doc-locked-note warning-box">
-                        Seu documento principal esta em analise. Aguarde a revisao do admin.
+                        Seu documento principal está em análise. Aguarde a revisão do administrador.
                       </div>
                     ) : (
                       <form className="doc-form" onSubmit={handleDocumentSubmit}>
@@ -397,7 +397,7 @@ export default function Perfil() {
 
                     {primaryHistory.length > 0 && (
                       <div className="doc-history">
-                        <h3>Historico do documento principal</h3>
+                        <h3>Histórico do documento principal</h3>
                         {primaryHistory.map((item) => (
                           <div className="doc-history-row" key={item.id}>
                             <div>
@@ -418,8 +418,8 @@ export default function Perfil() {
                   <div className="document-panel">
                     <div className="document-panel-head">
                       <div>
-                        <h3>Comprovante de residencia</h3>
-                        <p>Conta, boleto ou comprovante oficial com endereco.</p>
+                        <h3>Comprovante de residência</h3>
+                        <p>Conta, boleto ou comprovante oficial com endereço.</p>
                       </div>
                       <span className={`doc-badge ${residenceDocument?.status || "empty"}`}>
                         {formatDocStatus(residenceDocument?.status)}
@@ -430,7 +430,7 @@ export default function Perfil() {
                       <div className="doc-status">
                         <div>
                           <span>Documento</span>
-                          <strong>Comprovante de residencia</strong>
+                          <strong>Comprovante de residência</strong>
                         </div>
                         <div>
                           <span>Status</span>
@@ -453,16 +453,16 @@ export default function Perfil() {
 
                     {residenceDocument?.status === "aprovado" ? (
                       <div className="doc-locked-note success-box">
-                        Seu comprovante de residencia ja foi aprovado.
+                        Seu comprovante de residência já foi aprovado.
                       </div>
                     ) : residenceDocument?.status === "pendente" ? (
                       <div className="doc-locked-note warning-box">
-                        Seu comprovante esta em analise. Aguarde a revisao do admin.
+                        Seu comprovante está em análise. Aguarde a revisão do administrador.
                       </div>
                     ) : (
                       <form className="doc-form" onSubmit={handleResidenceSubmit}>
                         <label>
-                          Comprovante de residencia
+                          Comprovante de residência
                           <input
                             type="file"
                             accept="image/*,.pdf"
@@ -477,11 +477,11 @@ export default function Perfil() {
 
                     {residenceHistory.length > 0 && (
                       <div className="doc-history">
-                        <h3>Historico do comprovante</h3>
+                        <h3>Histórico do comprovante</h3>
                         {residenceHistory.map((item) => (
                           <div className="doc-history-row" key={item.id}>
                             <div>
-                              <strong>Comprovante de residencia</strong>
+                              <strong>Comprovante de residência</strong>
                               <span>{new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
                             </div>
                             <span className={`doc-badge ${item.status}`}>{formatDocStatus(item.status)}</span>
@@ -499,7 +499,7 @@ export default function Perfil() {
               <section className="profile-card">
                 <header>
                   <h2>Editar dados</h2>
-                  <p>Atualize suas informacoes de contato e endereco.</p>
+                  <p>Atualize suas informações de contato e endereço.</p>
                 </header>
                 <form className="profile-form" onSubmit={handleSave}>
                   <div>
@@ -507,7 +507,7 @@ export default function Perfil() {
                     <input type="text" value={form.name} disabled />
                   </div>
                   <div>
-                    <label>Usuario</label>
+                    <label>Usuário</label>
                     <input type="text" value={form.username || ""} disabled />
                   </div>
                   <div>
@@ -535,11 +535,11 @@ export default function Perfil() {
                     <input type="text" value={form.cep || ""} onChange={(e) => updateField("cep", e.target.value)} />
                   </div>
                   <div>
-                    <label>Endereco</label>
+                    <label>Endereço</label>
                     <input type="text" value={form.address || ""} onChange={(e) => updateField("address", e.target.value)} />
                   </div>
                   <div>
-                    <label>Numero</label>
+                    <label>Número</label>
                     <input type="text" value={form.number || ""} onChange={(e) => updateField("number", e.target.value)} />
                   </div>
                   <div>
@@ -558,7 +558,7 @@ export default function Perfil() {
                     <label>Estado</label>
                     <input type="text" value={form.state || ""} onChange={(e) => updateField("state", e.target.value)} />
                   </div>
-                  <button className="cta" type="submit">Salvar alteracoes</button>
+                  <button className="cta" type="submit">Salvar alterações</button>
                 </form>
               </section>
             </div>

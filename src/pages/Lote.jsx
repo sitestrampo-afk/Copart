@@ -23,7 +23,6 @@ function parseImages(auction) {
       if (typeof item === "string" && item.trim()) list.push(item.trim());
     });
   }
-  // Fallback: some endpoints may only send images_json as string.
   if (typeof auction?.images_json === "string" && auction.images_json.trim()) {
     try {
       const parsed = JSON.parse(auction.images_json);
@@ -84,17 +83,41 @@ function buildDescriptionItems(description) {
 
   const lines = raw
     .split(/\r?\n+/)
-    .map((line) => line.trim().replace(/^[•\-\*]+\s*/, ""))
+    .map((line) => line.trim().replace(/^[â€¢\-\*]+\s*/, ""))
     .filter(Boolean);
 
   if (lines.length > 1) return lines;
 
   const sentenceParts = raw
-    .split(/(?:\s+[•\-\*]\s+|;\s*|\.\s+)/)
+    .split(/(?:\s+[â€¢\-\*]\s+|;\s*|\.\s+)/)
     .map((part) => part.trim())
     .filter(Boolean);
 
   return sentenceParts.length > 1 ? sentenceParts : [raw];
+}
+
+function parseLotOrderValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return Number.POSITIVE_INFINITY;
+  const match = raw.match(/\d+/);
+  if (!match) return Number.POSITIVE_INFINITY;
+  const numeric = Number(match[0]);
+  return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY;
+}
+
+function compareLots(a, b) {
+  const lotNumberDiff = parseLotOrderValue(a?.lot_number) - parseLotOrderValue(b?.lot_number);
+  if (lotNumberDiff !== 0) return lotNumberDiff;
+
+  const startA = a?.starts_at ? new Date(a.starts_at).getTime() : Number.POSITIVE_INFINITY;
+  const startB = b?.starts_at ? new Date(b.starts_at).getTime() : Number.POSITIVE_INFINITY;
+  if (startA !== startB) return startA - startB;
+
+  return Number(a?.id || 0) - Number(b?.id || 0);
+}
+
+function sortLots(items) {
+  return [...(Array.isArray(items) ? items : [])].sort(compareLots);
 }
 
 export default function Lote() {
@@ -119,7 +142,7 @@ export default function Lote() {
 
   async function loadChildLotsSnapshot(targetAuctionId) {
     const response = await apiGet(`/api/auctions?type=lote&parent_id=${targetAuctionId}`);
-    return Array.isArray(response.data) ? response.data : [];
+    return sortLots(Array.isArray(response.data) ? response.data : []);
   }
 
   function mergeAuctionSnapshot(current, incoming) {
@@ -140,7 +163,7 @@ export default function Lote() {
         map.set(item.id, { ...(map.get(item.id) || {}), ...item });
       }
     }
-    return Array.from(map.values());
+    return sortLots(Array.from(map.values()));
   }
 
   useEffect(() => {
@@ -165,7 +188,6 @@ export default function Lote() {
         } catch {
           // analytics are non-blocking on public page
         }
-
       } catch (err) {
         if (!active) return;
         setError(err.message || "Erro ao carregar o lote.");
@@ -173,7 +195,7 @@ export default function Lote() {
     }
 
     if (!auctionId || Number.isNaN(auctionId)) {
-      setError("Lote invalido.");
+      setError("Lote inválido.");
       return undefined;
     }
 
@@ -217,7 +239,6 @@ export default function Lote() {
   const descriptionItems = useMemo(() => buildDescriptionItems(auction?.description), [auction?.description]);
 
   useEffect(() => {
-    // Keep countdown ticking while the page is open.
     const handle = setInterval(() => setTick(Date.now()), 1000);
     return () => clearInterval(handle);
   }, []);
@@ -296,12 +317,12 @@ export default function Lote() {
     setError("");
     setSuccess("");
     if (!token) {
-      setError("Faca login para dar lance.");
+      setError("Faça login para dar lance.");
       return;
     }
     const numeric = parseCurrencyBR(amount);
     if (!numeric || Number.isNaN(numeric)) {
-      setError("Informe um valor valido.");
+      setError("Informe um valor válido.");
       return;
     }
     setSubmitting(true);
@@ -311,7 +332,7 @@ export default function Lote() {
       setAmount("");
       await refreshAuction();
     } catch (err) {
-      setError(err.message || "Nao foi possivel enviar o lance.");
+      setError(err.message || "Não foi possível enviar o lance.");
     } finally {
       setSubmitting(false);
     }
@@ -335,7 +356,7 @@ export default function Lote() {
               {auction?.legal_status || "Extrajudicial"}
             </button>
             <button className="cta" type="button">
-              {isLeilaoFolder ? "Abrir pasta" : "Habilitar-se para leilao"}
+              {isLeilaoFolder ? "Abrir pasta" : "Habilitar-se para leilão"}
             </button>
           </div>
         </div>
@@ -350,7 +371,7 @@ export default function Lote() {
                   <h1 className="lot-title">{auction.title}</h1>
                   <div className="lot-tags">
                     <span className="tag red">{auction.legal_status || "EXTRAJUDICIAL"}</span>
-                    <span className="tag blue">Pasta do leilao</span>
+                    <span className="tag blue">Pasta do leilão</span>
                     <span className="tag gray">{auction.category_name || "SEM CATEGORIA"}</span>
                   </div>
                 </div>
@@ -375,7 +396,7 @@ export default function Lote() {
                   <section className="folder-hero-card">
                     <div className="folder-hero-media">
                       <div className="lot-image-wrap folder-hero-image-wrap">
-                        {mainImage ? <img className="lot-image folder-hero-image" src={mainImage} alt={auction.title || "Imagem do leilao"} /> : <div className="lot-image empty folder-hero-image" />}
+                        {mainImage ? <img className="lot-image folder-hero-image" src={mainImage} alt={auction.title || "Imagem do leilão"} /> : <div className="lot-image empty folder-hero-image" />}
                       </div>
                       <div className="folder-hero-overlay">
                         <div className="folder-hero-overlay-top">
@@ -397,8 +418,8 @@ export default function Lote() {
 
                     <div className="folder-hero-info">
                       <div className="folder-hero-copy">
-                        <span className="folder-hero-kicker">Pasta do leilao</span>
-                        <h2>Todos os lotes deste evento em uma unica visao</h2>
+                        <span className="folder-hero-kicker">Pasta do leilão</span>
+                        <h2>Todos os lotes deste evento em uma única visão</h2>
                         <p>Use esta pasta para navegar pelos lotes ativos, acompanhar o status geral do evento e abrir rapidamente cada item.</p>
                       </div>
                       <div className="folder-hero-stats">
@@ -408,15 +429,15 @@ export default function Lote() {
                         </div>
                         <div>
                           <span>Lotes</span>
-                          <strong>{childLots.length} disponiveis</strong>
+                          <strong>{childLots.length} disponíveis</strong>
                         </div>
                       </div>
                     </div>
                   </section>
 
-                  <section className="lot-info-box lot-folder-info-box" aria-label="Informacoes do leilao">
+                  <section className="lot-info-box lot-folder-info-box" aria-label="Informações do leilão">
                     <div className="lot-info-head">
-                      <h3>Informacoes da pasta</h3>
+                      <h3>Informações da pasta</h3>
                       <span className="lot-info-lot">Pasta</span>
                     </div>
                     <div className="lot-info-body">
@@ -440,10 +461,10 @@ export default function Lote() {
                   </section>
                 </div>
 
-                <aside className="lot-side" aria-label="Resumo do leilao">
+                <aside className="lot-side" aria-label="Resumo do leilão">
                   <div className="lot-folder-summary lot-folder-summary-enhanced">
-                    <div className="lot-time-title">PASTA DO LEILAO</div>
-                    <p className="lot-folder-summary-copy">Resumo rapido para acompanhar esta pasta sem precisar abrir lote por lote.</p>
+                    <div className="lot-time-title">PASTA DO LEILÃO</div>
+                    <p className="lot-folder-summary-copy">Resumo rápido para acompanhar esta pasta sem precisar abrir lote por lote.</p>
                     <div className="lot-folder-summary-grid">
                       <div>
                         <span>Endereço</span>
@@ -539,18 +560,18 @@ export default function Lote() {
                     )}
                   </div>
 
-                  <section className="lot-info-box" aria-label="Informacoes do lote">
+                  <section className="lot-info-box" aria-label="Informações do lote">
                     <div className="lot-info-head">
-                      <h3>Informacoes</h3>
+                      <h3>Informações</h3>
                       <span className="lot-info-lot">Lote {auction.lot_number || "-"}</span>
                     </div>
                     <div className="lot-info-body">
                       <div>
-                        <span>Inicio</span>
+                        <span>Início</span>
                         <strong>{formatDateBR(auction.starts_at)}</strong>
                       </div>
                       <div>
-                        <span>Termino</span>
+                        <span>Término</span>
                         <strong>{formatDateBR(auction.ends_at)}</strong>
                       </div>
                       <div>
@@ -563,7 +584,7 @@ export default function Lote() {
                       </div>
                       {auction.parent_auction_title ? (
                         <div>
-                          <span>Leilao vinculado</span>
+                          <span>Leilão vinculado</span>
                           <strong>{auction.parent_auction_title}</strong>
                         </div>
                       ) : null}
@@ -577,14 +598,19 @@ export default function Lote() {
                   </div>
 
                   <div className="lot-bid-body">
-                    <h2>De seu lance</h2>
-                    {isUpcoming ? <div className="helper-text">Este lote ainda nao abriu para lances e ficara disponivel em breve.</div> : null}
+                    <h2>Dê seu lance</h2>
+                    {isUpcoming ? <div className="helper-text">Este lote ainda não abriu para lances e ficará disponível em breve.</div> : null}
 
                     <div className="lot-quick">
                       {quickSteps.map((value) => (
-                        <button key={value} className="quick" type="button" onClick={() => setAmount(formatCurrencyBR(value))}>
-                          <span className="plus">+</span>
-                          <span>{formatMoney(value)}</span>
+                        <button
+                          key={value}
+                          className="quick"
+                          type="button"
+                          onClick={() => setAmount(formatCurrencyBR(value))}
+                        >
+                          <span className="plus" aria-hidden="true">+</span>
+                          <span className="quick-value">{formatMoney(value)}</span>
                         </button>
                       ))}
                     </div>
@@ -600,14 +626,14 @@ export default function Lote() {
                         }}
                         inputMode="decimal"
                         type="text"
-                        placeholder={`Minimo ${formatMoney(currentBid + increment)}`}
+                        placeholder={`Mínimo ${formatMoney(currentBid + increment)}`}
                       />
                       <button className="cta" type="button" disabled={!canBid || submitting} onClick={submitBid}>
                         {bidButtonLabel}
                       </button>
                       {!token && (
                         <div className="helper-text">
-                          <Link to="/login">Entre</Link> para participar do leilao.
+                          <Link to="/login">Entre</Link> para participar do leilão.
                         </div>
                       )}
                     </div>
@@ -617,12 +643,12 @@ export default function Lote() {
                   </div>
                 </section>
 
-                <aside className="lot-side" aria-label="Resumo do leilao">
+                <aside className="lot-side" aria-label="Resumo do leilão">
                   <div className="lot-time-card">
                     <div className="lot-time-title">
-                      {isUpcoming ? "LEILAO EM BREVE" : isOpen ? "LEILAO ENCERRA EM" : "LEILAO ENCERRADO"}
+                      {isUpcoming ? "LEILÃO EM BREVE" : isOpen ? "LEILÃO ENCERRA EM" : "LEILÃO ENCERRADO"}
                     </div>
-                    {isUpcoming ? <div className="lot-upcoming-note">Agendado para inicio futuro.</div> : null}
+                    {isUpcoming ? <div className="lot-upcoming-note">Agendado para início futuro.</div> : null}
                     {((isUpcoming && startsAt) || (isOpen && endsAt)) && countdown ? (
                       <div className="lot-countdown" aria-label="Contador regressivo">
                         <div className="lot-countdown-label">{isUpcoming ? "Tempo para abrir" : "Tempo restante"}</div>
@@ -647,7 +673,7 @@ export default function Lote() {
                       </div>
                     ) : null}
                     <div className="lot-time-meta">
-                      <span>{isUpcoming ? "Inicio previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
+                      <span>{isUpcoming ? "Início previsto" : isOpen ? "Encerramento" : "Encerrado em"}</span>
                       <strong>{formatDateBR(isUpcoming ? auction.starts_at : auction.ends_at)}</strong>
                     </div>
                   </div>
@@ -655,18 +681,18 @@ export default function Lote() {
                   <div className="lot-current lot-current-box">
                     <span>Lance atual</span>
                     <strong>{formatMoney(auction.current_bid)}</strong>
-                    {auction.current_bidder_name && <small>Usuario: {auction.current_bidder_name}</small>}
+                    {auction.current_bidder_name && <small>Usuário: {auction.current_bidder_name}</small>}
                   </div>
                 </aside>
               </div>
 
-              <div className="lot-tabs" aria-label="Conteudo do lote">
+              <div className="lot-tabs" aria-label="Conteúdo do lote">
                 <div className="lot-tabs-bar" role="tablist" aria-label="Abas do lote">
                   <button className="tab active" type="button">
-                    Descricao
+                    Descrição
                   </button>
                   <button className="tab" type="button">
-                    Historico de lances
+                    Histórico de lances
                   </button>
                 </div>
               </div>
@@ -691,7 +717,7 @@ export default function Lote() {
                 {auction.description && (
                   <section className="lot-extra-panel">
                     <div className="lot-panel-head">
-                      <h3>Descricao</h3>
+                      <h3>Descrição</h3>
                     </div>
                     <ul className="lot-description-list">
                       {descriptionItems.map((item, index) => (
@@ -707,7 +733,7 @@ export default function Lote() {
                 {(auction.inspection_notes || auction.payment_notes || auction.withdrawal_notes) && (
                   <section className="lot-extra-panel">
                     <div className="lot-panel-head">
-                      <h3>Informacoes operacionais</h3>
+                      <h3>Informações operacionais</h3>
                     </div>
                     <div className="lot-note-grid">
                       <div>
@@ -729,15 +755,15 @@ export default function Lote() {
 
               <section className="lot-extra-panel lot-history-panel">
                 <div className="lot-panel-head">
-                  <h3>Historico de lances</h3>
-                  <p>Ultimas ofertas registradas neste lote.</p>
+                  <h3>Histórico de lances</h3>
+                  <p>Últimas ofertas registradas neste lote.</p>
                 </div>
                 {recentBids.length === 0 ? (
                   <div className="admin-empty-state">Nenhum lance registrado ainda.</div>
                 ) : (
                   <div className="table admin-table-pro lot-history-table">
                     <div>
-                      <span>Usuario</span>
+                      <span>Usuário</span>
                       <span>Valor</span>
                       <span>Data</span>
                     </div>

@@ -22,7 +22,7 @@ export default function AdminLogin() {
     } catch (err) {
       const msg = err.message || "Erro na requisicao";
       if (msg.toLowerCase().includes("failed to fetch") || msg.toLowerCase().includes("networkerror")) {
-        setError(`Nao foi possivel conectar ao backend em ${apiBaseUrl}. Verifique CORS, URL e deploy do backend.`);
+        setError(`Não foi possível conectar ao backend em ${apiBaseUrl}. Verifique CORS, URL e deploy do backend.`);
         return;
       }
       setError(msg);

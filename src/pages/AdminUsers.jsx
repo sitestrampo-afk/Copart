@@ -129,7 +129,7 @@ export default function AdminUsers() {
   return (
     <div className="admin-page">
       <div className="admin-card">
-        <h2>Usuarios cadastrados</h2>
+        <h2>Usuários cadastrados</h2>
         {error && <div className="alert">{error}</div>}
         <div className="table">
           <div>
@@ -221,7 +221,7 @@ export default function AdminUsers() {
                   <div className="user-profile-section">
                     <h4>Dados pessoais</h4>
                     <div><span>Nome</span><strong>{openUser.name}</strong></div>
-                    <div><span>Usuario</span><strong>{openUser.username || "-"}</strong></div>
+                    <div><span>Usuário</span><strong>{openUser.username || "-"}</strong></div>
                     <div><span>Email</span><strong>{openUser.email}</strong></div>
                     <div><span>Tipo</span><strong>{openUser.type === "pj" ? "Pessoa Juridica" : "Pessoa Fisica"}</strong></div>
                     <div><span>Perfil</span><strong>{Number(openUser.is_bot) ? "Fantasma" : "Humano"}</strong></div>
@@ -236,7 +236,7 @@ export default function AdminUsers() {
                     <div><span>WhatsApp</span><strong>{openUser.whatsapp || "-"}</strong></div>
                     <div><span>Cidade</span><strong>{openUser.city || "-"}</strong></div>
                     <div><span>Estado</span><strong>{openUser.state || "-"}</strong></div>
-                    <div><span>Endereco</span><strong>{openUser.address ? `${openUser.address}, ${openUser.number || "-"}` : "-"}</strong></div>
+                    <div><span>Endereço</span><strong>{openUser.address ? `${openUser.address}, ${openUser.number || "-"}` : "-"}</strong></div>
                     <div><span>CEP</span><strong>{openUser.cep || "-"}</strong></div>
                   </div>
 

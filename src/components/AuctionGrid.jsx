@@ -45,7 +45,7 @@ export default function AuctionGrid({ auctions = [] }) {
           const imageUrl = getAuctionImage(auction);
           const lotsCount = Number(auction.child_lots_count || 0);
           const locationLabel = auction.location || "Fixo no cadastro";
-          const categoryLabel = auction.category_name || "Leilao";
+          const categoryLabel = auction.category_name || "Leilão";
 
           return (
             <article key={auction.id} className="folder-showcase-card">
@@ -65,7 +65,7 @@ export default function AuctionGrid({ auctions = [] }) {
 
                 <div className="folder-showcase-meta">
                   <div className="folder-showcase-meta-card">
-                    <span>Endereco</span>
+                    <span>Endereço</span>
                     <strong>{locationLabel}</strong>
                   </div>
                   <div className="folder-showcase-meta-card">
@@ -77,7 +77,7 @@ export default function AuctionGrid({ auctions = [] }) {
                     <strong>{categoryLabel}</strong>
                   </div>
                   <div className="folder-showcase-meta-card">
-                    <span>Lotes disponiveis</span>
+                    <span>Lotes disponíveis</span>
                     <strong>{lotsCount}</strong>
                   </div>
                 </div>

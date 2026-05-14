@@ -32,18 +32,18 @@ export default function Navbar() {
         <span>Contato</span>
       </div>
       <div className="nav-main">
-        <Link to="/" className="brand brand-link" aria-label="Leilao Copart">
-          <img className="brand-logo" src={logo} alt="Leilao Copart" />
+        <Link to="/" className="brand brand-link" aria-label="Leilão Copart">
+          <img className="brand-logo" src={logo} alt="Leilão Copart" />
         </Link>
         <form className="search" onSubmit={handleSearch}>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar lotes e leiloes..." />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar lotes e leilões..." />
           <button aria-label="buscar" type="submit">
             <i className="fa-solid fa-magnifying-glass" />
           </button>
         </form>
         <div className="nav-actions">
           <Link to="/" className="ghost">
-            <i className="fa-solid fa-house" /> Inicio
+            <i className="fa-solid fa-house" /> Início
           </Link>
           {userToken ? (
             <>
@@ -74,22 +74,22 @@ export default function Navbar() {
       </div>
       <div className="nav-categories">
         <Link to="/">
-          <i className="fa-solid fa-house" /> Inicio
+          <i className="fa-solid fa-house" /> Início
         </Link>
         <Link to="/categorias?q=Carros">
           <i className="fa-solid fa-car" /> Carros
         </Link>
         <Link to="/categorias?q=Caminhoes">
-          <i className="fa-solid fa-truck" /> Caminhoes
+          <i className="fa-solid fa-truck" /> Caminhões
         </Link>
         <Link to="/categorias?q=Motos">
           <i className="fa-solid fa-motorcycle" /> Motos
         </Link>
         <Link to="/categorias?q=Utilitarios">
-          <i className="fa-solid fa-van-shuttle" /> Utilitarios
+          <i className="fa-solid fa-van-shuttle" /> Utilitários
         </Link>
         <Link to="/categorias?q=Imoveis">
-          <i className="fa-solid fa-building" /> Imoveis
+          <i className="fa-solid fa-building" /> Imóveis
         </Link>
       </div>
       <div className="nav-info">
@@ -103,8 +103,8 @@ export default function Navbar() {
 
       <div className={`mobile-drawer ${open ? "open" : ""}`}>
         <div className="mobile-header">
-          <Link to="/" className="brand brand-link" aria-label="Leilao Copart" onClick={() => setOpen(false)}>
-            <img className="brand-logo brand-logo-mobile" src={logo} alt="Leilao Copart" />
+          <Link to="/" className="brand brand-link" aria-label="Leilão Copart" onClick={() => setOpen(false)}>
+            <img className="brand-logo brand-logo-mobile" src={logo} alt="Leilão Copart" />
           </Link>
           <button className="ghost" onClick={() => setOpen(false)} aria-label="Fechar menu">
             <i className="fa-solid fa-xmark" />
@@ -142,22 +142,22 @@ export default function Navbar() {
         </div>
         <div className="mobile-links">
           <Link to="/" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-house" /> Inicio
+            <i className="fa-solid fa-house" /> Início
           </Link>
           <Link to="/categorias?q=Carros" onClick={() => setOpen(false)}>
             <i className="fa-solid fa-car" /> Carros
           </Link>
           <Link to="/categorias?q=Caminhoes" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-truck" /> Caminhoes
+            <i className="fa-solid fa-truck" /> Caminhões
           </Link>
           <Link to="/categorias?q=Motos" onClick={() => setOpen(false)}>
             <i className="fa-solid fa-motorcycle" /> Motos
           </Link>
           <Link to="/categorias?q=Utilitarios" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-van-shuttle" /> Utilitarios
+            <i className="fa-solid fa-van-shuttle" /> Utilitários
           </Link>
           <Link to="/categorias?q=Imoveis" onClick={() => setOpen(false)}>
-            <i className="fa-solid fa-building" /> Imoveis
+            <i className="fa-solid fa-building" /> Imóveis
           </Link>
         </div>
       </div>

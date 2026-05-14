@@ -56,13 +56,13 @@ export default function Lances() {
       <main className="user-page">
         <div className="user-header">
           <h1>Meus lances</h1>
-          <p>Acompanhe seus lances e o status de cada leilao.</p>
+          <p>Acompanhe seus lances e o status de cada leilão.</p>
         </div>
 
         {!token && (
           <div className="user-empty">
-            <h2>Voce precisa entrar</h2>
-            <p>Entre na sua conta para ver seu historico de lances.</p>
+            <h2>Você precisa entrar</h2>
+            <p>Entre na sua conta para ver seu histórico de lances.</p>
             <Link className="cta" to="/login">Ir para login</Link>
           </div>
         )}
@@ -85,23 +85,23 @@ export default function Lances() {
                 <strong>{summary.highest.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
               </div>
               <div>
-                <span>Ultima atualizacao</span>
+                <span>Última atualização</span>
                 <strong>{new Date().toLocaleString("pt-BR")}</strong>
               </div>
             </div>
 
             <section className="bids-card">
               <header>
-                <h2>Historico</h2>
-                <p>Veja quando e quanto voce ofertou em cada lote.</p>
+                <h2>Histórico</h2>
+                <p>Veja quando e quanto você ofertou em cada lote.</p>
               </header>
 
               {loading && <p>Carregando lances...</p>}
 
               {!loading && bids.length === 0 && (
                 <div className="bids-empty">
-                  <p>Voce ainda nao fez nenhum lance.</p>
-                  <Link className="cta" to="/">Explorar leiloes</Link>
+                  <p>Você ainda não fez nenhum lance.</p>
+                  <Link className="cta" to="/">Explorar leilões</Link>
                 </div>
               )}
 

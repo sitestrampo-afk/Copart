@@ -43,7 +43,7 @@ export default function AdminBids() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por usuario ou lote..."
+                placeholder="Buscar por usuário ou lote..."
               />
             </div>
           </div>
@@ -56,7 +56,7 @@ export default function AdminBids() {
             <span>ID</span>
             <span>Data</span>
             <span>Origem</span>
-            <span>Usuario</span>
+            <span>Usuário</span>
             <span>Lote</span>
             <span>Valor</span>
           </div>
@@ -64,7 +64,7 @@ export default function AdminBids() {
             <div key={bid.id} className="admin-table-row">
               <span>#{bid.id}</span>
               <span>{bid.created_at ? new Date(bid.created_at).toLocaleString("pt-BR") : "-"}</span>
-              <span>{bid.source_type === "auto" ? `Automatico${bid.automation_rule_id ? ` #${bid.automation_rule_id}` : ""}` : "Humano"}</span>
+              <span>{bid.source_type === "auto" ? `Automático${bid.automation_rule_id ? ` #${bid.automation_rule_id}` : ""}` : "Humano"}</span>
               <span>{bid.user_name}</span>
               <span>{bid.auction_title}</span>
               <span className="money">{formatMoney(bid.amount)}</span>
@@ -77,7 +77,7 @@ export default function AdminBids() {
       </div>
 
       <div className="admin-note">
-        <strong>Observacao:</strong> nao implementamos nem damos suporte a simulacao de lances ("lances frios").
+        <strong>Observação:</strong> não implementamos nem damos suporte à simulação de lances ("lances frios").
       </div>
     </div>
   );

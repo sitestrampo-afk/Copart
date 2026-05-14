@@ -397,7 +397,7 @@ export default function AdminAuctions() {
     () => auctions.filter((item) => normalizeListingType(item.listing_type) === "leilao"),
     [auctions]
   );
-  const pageTitle = routeType === "leilao" ? "Leiloes" : "Lotes";
+  const pageTitle = routeType === "leilao" ? "Leilões" : "Lotes";
   const pageSubtitle =
     routeType === "leilao"
       ? "Gerencie os leiloes e mantenha os lotes organizados em separado."
@@ -489,7 +489,7 @@ export default function AdminAuctions() {
           {form.listing_type === "lote" ? (
             <>
               <label className="admin-field span-2">
-                <span>Leilao vinculado</span>
+                <span>Leilão vinculado</span>
                 <select
                   value={form.parent_auction_id}
                   onChange={(e) => setForm({ ...form, parent_auction_id: e.target.value })}
@@ -539,7 +539,7 @@ export default function AdminAuctions() {
             </>
           ) : (
             <div className="admin-alert admin-alert-info span-2">
-              Leiloes ficam separados dos lotes. Aqui voce cadastra o evento principal, sem usar numero de lote,
+              Leilões ficam separados dos lotes. Aqui você cadastra o evento principal, sem usar número de lote,
               lance inicial ou incremento minimo.
             </div>
           )}
@@ -576,7 +576,7 @@ export default function AdminAuctions() {
           </label>
 
           <label className="admin-field">
-            <span>Inicio</span>
+            <span>Início</span>
             <input
               type="datetime-local"
               value={form.starts_at}
@@ -616,7 +616,7 @@ export default function AdminAuctions() {
           </label>
 
           <label className="admin-field">
-            <span>Termino</span>
+            <span>Término</span>
             <input
               type="datetime-local"
               value={form.ends_at}
@@ -646,7 +646,7 @@ export default function AdminAuctions() {
           </label>
 
           <label className="admin-field span-2">
-            <span>Descricao completa</span>
+            <span>Descrição completa</span>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -881,7 +881,7 @@ export default function AdminAuctions() {
                 <span>Lotes</span>
                 <span>Ordem</span>
                 <span>Foto</span>
-                <span>Data Inicio</span>
+                <span>Data de início</span>
                 <span>Data Fim</span>
                 <span>Acoes</span>
               </div>
@@ -892,12 +892,12 @@ export default function AdminAuctions() {
                 <span>Mais Fotos</span>
                 <span>No. do Lote</span>
                 <span>Foto</span>
-                <span>Leiloes</span>
+                <span>Leilões</span>
                 <span>Lance Atual</span>
                 <span>Arrematante</span>
                 <span>Data (1a Praca)</span>
                 <span>Data (2a Praca)</span>
-                <span>Status do Leilao</span>
+                <span>Status do leilão</span>
                 <span>Acoes</span>
               </div>
             )}
@@ -960,7 +960,7 @@ export default function AdminAuctions() {
                     <span>
                       <strong>{item.title}</strong>
                       <small>{item.category_name || "Sem categoria"}</small>
-                      {item.parent_auction_title ? <small>Leilao: {item.parent_auction_title}</small> : null}
+                      {item.parent_auction_title ? <small>Leilão: {item.parent_auction_title}</small> : null}
                       <small>{item.legal_status || "Extrajudicial"} • {item.auction_mode || "Online"}</small>
                     </span>
                     <span>

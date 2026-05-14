@@ -24,16 +24,16 @@ export default function Confirmacao() {
       })
       .catch((err) => {
         setStatus("erro");
-        setMessage(err.message || "Nao foi possivel confirmar.");
+        setMessage(err.message || "Não foi possível confirmar.");
       });
   }, [params, navigate]);
 
   return (
     <main className="confirm-page">
       <div className={`confirm-card ${status}`}>
-        <h2>Confirmacao de conta</h2>
+        <h2>Confirmação de conta</h2>
         <p>{message}</p>
-        {status === "ok" && <p>Voce sera redirecionado em 5 segundos.</p>}
+        {status === "ok" && <p>Você será redirecionado em 5 segundos.</p>}
       </div>
     </main>
   );

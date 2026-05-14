@@ -44,7 +44,7 @@ function getStatusLabel(status) {
   if (normalized === "aberto") return "ABERTO PARA LANCES";
   if (normalized === "agendado") return "EM BREVE";
   if (normalized === "encerrado") return "LOTE ENCERRADO";
-  return "STATUS INDISPONIVEL";
+  return "STATUS INDISPONÍVEL";
 }
 
 function getStatusButtonLabel(status) {
@@ -77,7 +77,7 @@ export default function LotCard({ auction }) {
 
         <div className="lot-showcase-banner">
           <div className="lot-showcase-banner-time">
-            <span>Inicio</span>
+            <span>Início</span>
             <strong>{formatDateTimeCompact(auction.starts_at)}</strong>
           </div>
           <div className="lot-showcase-banner-row">
@@ -110,23 +110,23 @@ export default function LotCard({ auction }) {
           </div>
           <div className="lot-showcase-detail">
             <span className="lot-showcase-detail-label">
-              <i className="fa-regular fa-calendar" /> Inicio
+              <i className="fa-regular fa-calendar" /> Início
             </span>
             <strong>{formatDateTimeCompact(auction.starts_at)}</strong>
           </div>
           <div className="lot-showcase-detail lot-showcase-detail-price lot-showcase-detail-accent">
-            <span className="lot-showcase-detail-label">Incremento minimo</span>
+            <span className="lot-showcase-detail-label">Incremento mínimo</span>
             <strong>{formatMoney(auction.minimum_bid_increment || 0)}</strong>
           </div>
           <div className="lot-showcase-detail">
             <span className="lot-showcase-detail-label">
-              <i className="fa-regular fa-calendar-xmark" /> Termino
+              <i className="fa-regular fa-calendar-xmark" /> Término
             </span>
             <strong>{formatDateTimeCompact(auction.ends_at)}</strong>
           </div>
           <div className="lot-showcase-detail">
             <span className="lot-showcase-detail-label">Lote</span>
-            <strong>{auction.lot_number ? `Lote ${auction.lot_number}` : "Lote sem numero"}</strong>
+            <strong>{auction.lot_number ? `Lote ${auction.lot_number}` : "Lote sem número"}</strong>
           </div>
         </div>
 

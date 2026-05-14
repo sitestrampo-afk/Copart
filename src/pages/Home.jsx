@@ -62,7 +62,7 @@ export default function Home() {
       return value;
     })();
     if (!token) {
-      setBidError("Faca login para dar lances.");
+      setBidError("Faça login para dar lances.");
       return;
     }
     try {
@@ -73,7 +73,7 @@ export default function Home() {
       const msg = err.message || "Erro ao enviar lance.";
       if (msg.toLowerCase().includes("sessao invalida") || msg.toLowerCase().includes("token ausente")) {
         localStorage.removeItem("userToken");
-        setBidError("Sua sessao expirou. Faca login novamente.");
+        setBidError("Sua sessão expirou. Faça login novamente.");
         return;
       }
       setBidError(msg);

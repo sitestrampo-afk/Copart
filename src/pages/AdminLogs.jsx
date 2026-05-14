@@ -63,13 +63,13 @@ export default function AdminLogs() {
         <div className="admin-card-head">
           <div>
             <div className="admin-kicker">Auditoria</div>
-            <h2>Logs e historico de automacao</h2>
-            <p>Consulta central de eventos do admin, cron, criacao de usuarios e execucoes automaticas.</p>
+            <h2>Logs e histórico de automação</h2>
+            <p>Consulta central de eventos do admin, cron, criação de usuários e execuções automáticas.</p>
           </div>
           <div className="admin-card-actions">
             <div className="admin-search">
               <i className="fa-solid fa-magnifying-glass" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por acao, regra ou motivo..." />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por ação, regra ou motivo..." />
             </div>
             <button type="button" className="ghost" onClick={load}>
               Atualizar
@@ -92,7 +92,7 @@ export default function AdminLogs() {
           <div className="table admin-table-pro">
             <div>
               <span>Data</span>
-              <span>Acao</span>
+              <span>Ação</span>
               <span>Admin</span>
               <span>Detalhes</span>
             </div>
@@ -110,8 +110,8 @@ export default function AdminLogs() {
         <section className="admin-card admin-panel-card">
           <div className="admin-card-head">
             <div>
-              <div className="admin-kicker">Automacao</div>
-              <h2>Execucoes recentes</h2>
+              <div className="admin-kicker">Automação</div>
+              <h2>Execuções recentes</h2>
             </div>
           </div>
           <div className="table admin-table-pro">

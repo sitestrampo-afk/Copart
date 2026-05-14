@@ -7,16 +7,23 @@ function normalizeListingType(value) {
 
 function formatAuctionLabel(auction) {
   if (!auction) return "-";
-  const typeLabel = normalizeListingType(auction.listing_type) === "leilao" ? "Leilao" : "Lote";
+  const typeLabel = normalizeListingType(auction.listing_type) === "leilao" ? "Leilão" : "Lote";
   const parts = [`[${auction.id}] ${typeLabel} - ${auction.title}`];
-  if (auction.starts_at) parts.push(`Inicio: ${new Date(auction.starts_at).toLocaleString("pt-BR")}`);
-  if (auction.ends_at) parts.push(`Termino: ${new Date(auction.ends_at).toLocaleString("pt-BR")}`);
+  if (auction.starts_at) parts.push(`Início: ${new Date(auction.starts_at).toLocaleString("pt-BR")}`);
+  if (auction.ends_at) parts.push(`Término: ${new Date(auction.ends_at).toLocaleString("pt-BR")}`);
   return parts.join(" | ");
 }
 
 function formatDateTime(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("pt-BR");
+}
+
+function toApiDateTime(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const normalized = raw.replace("T", " ");
+  return normalized.length === 16 ? `${normalized}:00` : normalized;
 }
 
 function getMultiSelectValues(event) {
@@ -36,15 +43,15 @@ function isRouteNotFoundError(error) {
 }
 
 const modalLabels = {
-  firstBid: "Lance unico",
+  firstBid: "Lance único",
   massBid: "Lances em massa",
-  autoViews: "Gerar visualizacoes",
-  restart: "Reiniciar leilao",
+  autoViews: "Gerar visualizações",
+  restart: "Reiniciar leilão",
   reschedule: "Configurar evento",
   createBots: "Criar bots fantasma",
-  createDemo: "Criar usuarios de teste",
+  createDemo: "Criar usuários de teste",
   openClose: "Abrir ou encerrar lote",
-  runCron: "Executar automacao"
+  runCron: "Executar automação"
 };
 
 export default function AdminSettings() {
@@ -346,14 +353,24 @@ export default function AdminSettings() {
       setOpsError("Selecione uma pasta de leilao.");
       return;
     }
+    const startMs = rescheduleForm.starts_at ? new Date(rescheduleForm.starts_at).getTime() : NaN;
+    const endMs = rescheduleForm.ends_at ? new Date(rescheduleForm.ends_at).getTime() : NaN;
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      setOpsError("Informe datas válidas para início e fim.");
+      return;
+    }
+    if (endMs <= startMs) {
+      setOpsError("A data / hora final precisa ser posterior à data / hora de início.");
+      return;
+    }
     setOpsError("");
     setOpsMessage("");
     try {
       const res = await apiPostAuth(
         `/api/admin/auctions/${Number(rescheduleForm.parent_auction_id)}/reschedule-family`,
         {
-          starts_at: rescheduleForm.starts_at,
-          ends_at: rescheduleForm.ends_at,
+          starts_at: toApiDateTime(rescheduleForm.starts_at),
+          ends_at: toApiDateTime(rescheduleForm.ends_at),
           lot_interval_minutes: Number(rescheduleForm.lot_interval_minutes || 2),
           reset_bids: Number(rescheduleForm.reset_bids || 0),
           reset_views: Number(rescheduleForm.reset_views || 0)

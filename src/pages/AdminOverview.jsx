@@ -48,10 +48,10 @@ export default function AdminOverview() {
       {error && <div className="alert">{error}</div>}
 
       <div className="stats">
-        <div className="stat-card"><span>Leiloes</span><strong>{stats.auctions}</strong></div>
+        <div className="stat-card"><span>Leilões</span><strong>{stats.auctions}</strong></div>
         <div className="stat-card"><span>Agendados</span><strong>{stats.scheduled_auctions}</strong></div>
         <div className="stat-card"><span>Rascunhos</span><strong>{stats.draft_auctions}</strong></div>
-        <div className="stat-card"><span>Usuarios</span><strong>{stats.users}</strong></div>
+        <div className="stat-card"><span>Usuários</span><strong>{stats.users}</strong></div>
         <div className="stat-card"><span>Aprovados</span><strong>{stats.approved_users}</strong></div>
         <div className="stat-card"><span>Lances hoje</span><strong>{stats.bids_today}</strong></div>
         <div className="stat-card"><span>Online agora</span><strong>{stats.online_users}</strong></div>
@@ -61,21 +61,21 @@ export default function AdminOverview() {
 
       <div className="admin-grid">
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--quick">
-          <span className="admin-kicker">Operacao</span>
-          <h2>Atalhos rapidos</h2>
+          <span className="admin-kicker">Operação</span>
+          <h2>Atalhos rápidos</h2>
           <ul>
             <li>Agendar abertura e fechamento de lotes</li>
-            <li>Publicar leiloes em massa</li>
+            <li>Publicar leilões em massa</li>
             <li>Aprovar documentos pendentes</li>
-            <li>Monitorar fontes de trafego e usuarios online</li>
+            <li>Monitorar fontes de tráfego e usuários online</li>
           </ul>
         </section>
 
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--bids">
           <span className="admin-kicker">Tempo real</span>
-          <h2>Ultimos lances</h2>
+          <h2>Últimos lances</h2>
           <div className={`table admin-table-pro ${bids.length === 0 ? "admin-table-pro--empty" : ""}`}>
-            <div><span>Usuario</span><span>Lote</span><span>Valor</span></div>
+            <div><span>Usuário</span><span>Lote</span><span>Valor</span></div>
             {bids.map((bid) => (
               <div key={bid.id}><span>{bid.user_name}</span><span>{bid.auction_title}</span><span>R$ {Number(bid.amount).toLocaleString("pt-BR")}</span></div>
             ))}
@@ -85,8 +85,8 @@ export default function AdminOverview() {
 
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--traffic">
           <span className="admin-kicker">Analytics</span>
-          <h2>Origem de trafego</h2>
-          {(stats.top_sources || []).length === 0 && <p>Nenhum dado de trafego ainda.</p>}
+          <h2>Origem de tráfego</h2>
+          {(stats.top_sources || []).length === 0 && <p>Nenhum dado de tráfego ainda.</p>}
           {(stats.top_sources || []).length > 0 && (
             <div className="table admin-table-pro">
               <div><span>Origem</span><span>Total</span><span></span></div>
@@ -98,12 +98,12 @@ export default function AdminOverview() {
         </section>
 
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--online">
-          <span className="admin-kicker">Sessoes</span>
-          <h2>Usuarios online</h2>
-          {onlineUsers.length === 0 && <p>Nenhum usuario online agora.</p>}
+          <span className="admin-kicker">Sessões</span>
+          <h2>Usuários online</h2>
+          {onlineUsers.length === 0 && <p>Nenhum usuário online agora.</p>}
           {onlineUsers.length > 0 && (
             <div className="table admin-table-pro">
-              <div><span>Nome</span><span>Email</span><span>Ultima atividade</span></div>
+              <div><span>Nome</span><span>Email</span><span>Última atividade</span></div>
               {onlineUsers.slice(0, 6).map((user) => (
                 <div key={user.id}><span>{user.name}</span><span>{user.email}</span><span>{user.last_seen ? new Date(user.last_seen).toLocaleString("pt-BR") : "-"}</span></div>
               ))}
@@ -112,9 +112,9 @@ export default function AdminOverview() {
         </section>
 
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--recent">
-          <span className="admin-kicker">Audiencia</span>
-          <h2>Visualizacoes recentes</h2>
-          {(stats.recent_views || []).length === 0 && <p>Nenhuma visualizacao recente.</p>}
+          <span className="admin-kicker">Audiência</span>
+          <h2>Visualizações recentes</h2>
+          {(stats.recent_views || []).length === 0 && <p>Nenhuma visualização recente.</p>}
           {(stats.recent_views || []).length > 0 && (
             <div className="table admin-table-pro">
               <div><span>Lote</span><span>Origem</span><span>Quando</span></div>
@@ -127,9 +127,9 @@ export default function AdminOverview() {
 
         <section className="admin-card admin-panel-card admin-overview-card admin-overview-card--logs">
           <span className="admin-kicker">Auditoria</span>
-          <h2>Logs de acoes</h2>
+          <h2>Logs de ações</h2>
           <div className="table admin-table-pro">
-            <div><span>Data</span><span>Acao</span><span>Detalhes</span></div>
+            <div><span>Data</span><span>Ação</span><span>Detalhes</span></div>
             {logs.slice(0, 8).map((log) => (
               <div key={log.id}><span>{new Date(log.created_at).toLocaleString("pt-BR")}</span><span>{log.action}</span><span>{log.details || "-"}</span></div>
             ))}

@@ -14,21 +14,21 @@ export default function AdminLayout() {
     <div className={`admin-shell v2 ${open ? "" : "collapsed"}`}>
       <header className="admin-topbar v2">
         <div className="admin-topbar-left">
-          <strong>Administracao do Site</strong>
+          <strong>Administração do Site</strong>
         </div>
         <div className="admin-topbar-right">
           <button className="admin-btn admin-btn-warn" type="button" onClick={() => setOpen(!open)}>
             <i className="fa-solid fa-bars" /> Menu
           </button>
           <NavLink className="admin-toplink" to="settings">
-            <i className="fa-solid fa-gear" /> Configuracoes
+            <i className="fa-solid fa-gear" /> Configurações
           </NavLink>
         </div>
       </header>
 
       <aside className={`admin-sidebar v2 ${open ? "" : "collapsed"}`}>
         <div className="admin-side-head">
-          <div className="admin-side-title">Leilao Copart</div>
+          <div className="admin-side-title">Leilão Copart</div>
           <div className="admin-side-sub">Painel</div>
         </div>
 
@@ -54,7 +54,7 @@ export default function AdminLayout() {
               <i className="fa-solid fa-gauge" /> Dashboard
             </NavLink>
             <NavLink to="leiloes">
-              <i className="fa-solid fa-gavel" /> Leiloes
+              <i className="fa-solid fa-gavel" /> Leilões
             </NavLink>
             <NavLink to="lotes">
               <i className="fa-solid fa-boxes-stacked" /> Lotes
@@ -63,7 +63,7 @@ export default function AdminLayout() {
               <i className="fa-solid fa-hand-holding-dollar" /> Lances
             </NavLink>
             <NavLink to="reports">
-              <i className="fa-solid fa-chart-pie" /> Relatorios
+              <i className="fa-solid fa-chart-pie" /> Relatórios
             </NavLink>
             <NavLink to="logs">
               <i className="fa-solid fa-clock-rotate-left" /> Logs
